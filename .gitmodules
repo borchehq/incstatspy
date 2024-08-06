@@ -1,0 +1,3 @@
+[submodule "rstats"]
+	path = rstats
+	url = https://github.com/borchehq/rstats
