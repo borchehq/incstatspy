@@ -13,5 +13,5 @@ target_include_directories(rstatspy PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/rstats
 target_link_libraries(rstatspy PRIVATE rstats)
 install(TARGETS rstatspy DESTINATION .)
 
-init_submodule(${CMAKE_CURRENT_LIST_DIR}/src/rstats)
+init_git_submodule(${CMAKE_CURRENT_LIST_DIR}/src/rstats)
 add_subdirectory(src)

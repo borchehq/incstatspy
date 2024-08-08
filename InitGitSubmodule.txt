@@ -1,6 +1,6 @@
 find_package(Git REQUIRED)
 
-function(init_submodule dir)
+function(init_git_submodule dir)
 
     if(NOT EXISTS ${dir}/CMakeLists.txt)
     execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- ${dir}
@@ -8,4 +8,4 @@ function(init_submodule dir)
         COMMAND_ERROR_IS_FATAL ANY)
     endif()
 
-endfunction(init_submodule)
+endfunction(init_git_submodule)
