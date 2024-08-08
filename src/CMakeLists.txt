@@ -1,2 +1,2 @@
-add_subdirectory(rstats/src)
+add_subdirectory(rstats)
 add_subdirectory(rstatspy)
