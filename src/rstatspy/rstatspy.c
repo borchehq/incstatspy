@@ -11,6 +11,26 @@
 #define PY_SSIZE_T_CLEAN
 
 
+typedef struct input_args {
+  PyArrayObject *data;
+  PyArrayObject *buffer;
+  PyArrayObject *weights;
+  double scalar_weight;
+  double scalar_data;
+  double *internal_buffer;
+  int axis;
+  bool input_is_scalar;
+  char **kwlist;
+  int n_dim_data;
+  int n_dim_weights;
+  int n_dim_buffer;
+  npy_intp *dimensions_data;
+  npy_intp *dimensions_weights;
+  npy_intp *dimensions_buffer;
+  npy_intp length_buffer;
+} input_args_container;
+
+
 inline static bool increment(size_t *idx, size_t *n_dims, size_t dims) {
   size_t i = 0;
   idx[i]++;
@@ -79,287 +99,313 @@ static int is_python_float(PyObject *obj) {
   return PyFloat_Check(obj);
 }
 
-static PyObject *rstatspy_mean(PyObject *self, PyObject *args, PyObject* kwargs)
-{
-  PyArrayObject *array = (PyArrayObject *) Py_None;
-  PyArrayObject *buffer = (PyArrayObject *) Py_None;
-  PyArrayObject *weights = (PyArrayObject *) Py_None;
-  double scalar_weight = 1.0;
-  PyObject *object_raw_array = Py_None;
+static int parse_input(PyObject *args, PyObject* kwargs, 
+input_args_container *input_args) {
+  PyObject *object_raw_data = Py_None;
   PyObject *object_raw_weights = Py_None;
   PyObject *object_raw_buffer = Py_None;
-  double array_scalar;
-  double *internal_buffer = NULL;
-  int axis = 0;
-  bool done = false;
-  double *buffer_ptr = NULL;
-  bool input_is_scalar = false;
 
-  static char *kwlist[] = {"input", "weights", "axis", "buffer", NULL};
-  
-  if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OiO", kwlist, 
-  &object_raw_array, &object_raw_weights, &axis, &object_raw_buffer)) {
-    return NULL;
+  if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OiO", input_args->kwlist, 
+  &object_raw_data, &object_raw_weights, &(input_args->axis),
+  &object_raw_buffer)) {
+    return -1;
   }
-  
-  if(!PyArray_Check(object_raw_array)) {
-    if(!PyArray_IsAnyScalar(object_raw_array)) {
-      PyErr_SetString(PyExc_TypeError, "First argument is not a ndarray or scalar");
-      return NULL;
+
+  if(!PyArray_Check(object_raw_data)) {
+    if(!PyArray_IsAnyScalar(object_raw_data)) {
+      PyErr_SetString(PyExc_TypeError, 
+      "Argument 1 is not a ndarray or scalar");
+      return -1;
     }
   }
 
   if(object_raw_weights != Py_None) {
     if(!PyArray_Check(object_raw_weights)) {
       if(!PyArray_IsAnyScalar(object_raw_weights)) {
-        PyErr_SetString(PyExc_TypeError, "Second argument is not a ndarray or scalar");
-        return NULL;
+        PyErr_SetString(PyExc_TypeError, 
+        "Argument 2 is not a ndarray or scalar");
+        return -1;
       }
     }
   }
   
   if(object_raw_buffer != Py_None) {
     if(!PyArray_Check(object_raw_buffer)) {
-      PyErr_SetString(PyExc_TypeError, "Fourth argument is not a ndarray");
-      return NULL;
+      PyErr_SetString(PyExc_TypeError, "Argument 3 is not a ndarray");
+      return -1;
     }
   }
 
-  int n_dim_data = 0;
-  if(!PyArray_IsAnyScalar(object_raw_array) && 
-  !PyArray_IsPythonNumber(object_raw_array)) {
-    array = (PyArrayObject *)
-    PyArray_FromAny(object_raw_array, NULL, 0, 0, NPY_ARRAY_ALIGNED, NULL);
-    if(!is_float64((PyObject *)array)) {
+  if(!PyArray_IsAnyScalar(object_raw_data) && 
+  !PyArray_IsPythonNumber(object_raw_data)) {
+    input_args->data = (PyArrayObject *)
+    PyArray_FromAny(object_raw_data, NULL, 0, 0, NPY_ARRAY_ALIGNED, NULL);
+    if(!is_float64((PyObject *)input_args->data)) {
       PyErr_SetString(PyExc_TypeError, "Argument 1 is not of type NPY_FLOAT64");
-      return NULL;
+      return -1;
     }
-    n_dim_data = PyArray_NDIM(array);
+    input_args->n_dim_data = PyArray_NDIM(input_args->data);
   }
   else {
-    input_is_scalar = true;
-    if(is_python_float(object_raw_array)) {
-      array_scalar = PyFloat_AsDouble(object_raw_array);
+    input_args->input_is_scalar = true;
+    if(is_python_float(object_raw_data)) {
+      input_args->scalar_data = PyFloat_AsDouble(object_raw_data);
     }
     else {
-      array = (PyArrayObject *)
-      PyArray_FromAny(object_raw_array, NULL, 0, 0, NPY_ARRAY_ALIGNED, NULL);
-      if(!is_float64((PyObject *) array)) {
+      input_args->data = (PyArrayObject *)
+      PyArray_FromAny(object_raw_data, NULL, 0, 0, NPY_ARRAY_ALIGNED, NULL);
+      if(!is_float64((PyObject *) input_args->data)) {
         PyErr_SetString(PyExc_TypeError, 
         "Argument 1 is neither of type NPY_FLOAT64 nor a python float");
-        return NULL;
+        return -1;
       }
-      array_scalar = *(double*)PyArray_DATA(array);
+      input_args->scalar_data = *(double*)PyArray_DATA(input_args->data);
     }
   }
 
-  int n_dim_weights = 0;
   if(object_raw_weights != Py_None) {
     if(!PyArray_IsAnyScalar(object_raw_weights) && 
     !PyArray_IsPythonNumber(object_raw_weights)) {
-      weights = (PyArrayObject *)
+      input_args->weights = (PyArrayObject *)
       PyArray_FromAny(object_raw_weights, NULL, 0, 0, NPY_ARRAY_ALIGNED, NULL);
-      if(!is_float64((PyObject *)weights)) {
-        PyErr_SetString(PyExc_TypeError, "Argument 2 is not of type NPY_FLOAT64");
-        return NULL;
+      if(!is_float64((PyObject *)input_args->weights)) {
+        PyErr_SetString(PyExc_TypeError, 
+        "Argument 2 is not of type NPY_FLOAT64");
+        return -1;
       }
-      n_dim_weights = PyArray_NDIM(weights);
-      if(input_is_scalar) {
-        PyErr_SetString(PyExc_TypeError, "Argument 1 is scalar while argument 2 is not");
-        return NULL;
+      input_args->n_dim_weights = PyArray_NDIM(input_args->weights);
+      if(input_args->input_is_scalar) {
+        PyErr_SetString(PyExc_TypeError, 
+        "Argument 1 is scalar while argument 2 is not");
+        return -1;
       }
     }
     else {
-      if(!input_is_scalar) {
-        PyErr_SetString(PyExc_TypeError, "Argument 2 is scalar while argument 1 is not");
-        return NULL;
+      if(!input_args->input_is_scalar) {
+        PyErr_SetString(PyExc_TypeError, 
+        "Argument 2 is scalar while argument 1 is not");
+        return -1;
       }
-      if(is_python_float(object_raw_array)) {
-        scalar_weight = PyFloat_AsDouble(object_raw_weights);
+      if(is_python_float(object_raw_data)) {
+        input_args->scalar_weight = PyFloat_AsDouble(object_raw_weights);
       }
       else {
-        weights = (PyArrayObject *)
+        input_args->weights = (PyArrayObject *)
         PyArray_FromAny(object_raw_weights, NULL, 0, 0, NPY_ARRAY_ALIGNED, NULL);
-        if(!is_float64((PyObject *) weights)) {
+        if(!is_float64((PyObject *) input_args->weights)) {
           PyErr_SetString(PyExc_TypeError, 
           "Argument 2 is neither of type NPY_FLOAT64 nor a python float");
-          return NULL;
+          return -1;
         }
-        scalar_weight = *(double*)PyArray_DATA(weights);
+        input_args->scalar_weight = *(double*)PyArray_DATA(input_args->weights);
       }
     }
   }
 
   if(object_raw_weights != Py_None) {
-    if(n_dim_data != n_dim_weights) {
+    if(input_args->n_dim_data != input_args->n_dim_weights) {
       PyErr_SetString(PyExc_TypeError, 
       "Argument 1 and argument 2 don't have the same number of dimensions");
-      return NULL;
+      return -1;
     }
   }
 
   if(object_raw_buffer != Py_None) {
-    buffer = (PyArrayObject *)
+    input_args->buffer = (PyArrayObject *)
     PyArray_FromAny(object_raw_buffer, NULL, 0, 0, 
     NPY_ARRAY_ALIGNED | NPY_ARRAY_WRITEABLE, NULL);     
   }
- 
-  int n_dim_buffer = -1;
+
   if(object_raw_buffer != Py_None) {
-    n_dim_buffer = PyArray_NDIM(buffer);
+    input_args->n_dim_buffer = PyArray_NDIM(input_args->buffer);
   }
 
-  if((axis < 0 || axis >= n_dim_data) && !input_is_scalar) {
+  if((input_args->axis < 0 || input_args->axis >= input_args->n_dim_data)
+  && !input_args->input_is_scalar) {
     PyErr_SetString(PyExc_TypeError, 
     "Axis must be non negative and within the dimensions of array");
-    return NULL;
+    return -1;
   }
  
   if(object_raw_buffer != Py_None) {
-    if(n_dim_buffer != 1) {
+    if(input_args->n_dim_buffer != 1) {
       PyErr_SetString(PyExc_TypeError, 
       "Fourth argument is expected to be 1-dimensional");
-      return NULL;
+      return -1;
     }
   }
-  
-  npy_intp *dimensions_array = NULL;
-  if(!input_is_scalar) {
-    dimensions_array = PyArray_DIMS(array);
-    for(size_t i = 0; i < n_dim_data; i++) {
-      if(dimensions_array[i] == 0) {
+
+  if(!input_args->input_is_scalar) {
+    input_args->dimensions_data = PyArray_DIMS(input_args->data);
+    for(size_t i = 0; i < input_args->n_dim_data; i++) {
+      if(input_args->dimensions_data[i] == 0) {
         PyErr_SetString(PyExc_TypeError, 
         "Dimensions can't be 0");
-        return NULL;
+        return -1;
       }
     }
   }
   
-  npy_intp *dimensions_weights = NULL;
   if(object_raw_weights != Py_None) {
-    if(!input_is_scalar) {
-      dimensions_weights = PyArray_DIMS(weights);
+    if(!input_args->input_is_scalar) {
+      input_args->dimensions_weights = PyArray_DIMS(input_args->weights);
     }
-    for(size_t i = 0; i < n_dim_data; i++) {
-      if(dimensions_weights[i] != dimensions_array[i]) {
+    for(size_t i = 0; i < input_args->n_dim_data; i++) {
+      if(input_args->dimensions_weights[i] != input_args->dimensions_data[i]) {
         PyErr_SetString(PyExc_TypeError, 
         "Dimensions of argument 1 and argument 2 are not matching!");
-        return NULL;
+        return -1;
       }
     }
   }
   
-  npy_intp *dimensions_buffer = NULL;
-  if(buffer != (PyArrayObject *)Py_None) {
-    dimensions_buffer = PyArray_DIMS(buffer);
+  if(input_args->buffer != (PyArrayObject *)Py_None) {
+    input_args->dimensions_buffer = PyArray_DIMS(input_args->buffer);
   }
-   
-  npy_intp length_buffer = 3;
- 
-  for(int i = 0; i < n_dim_data; i++) {
-    if(i != axis) {
-      length_buffer *= (dimensions_array[i] > 0 ? dimensions_array[i] : 1);
+
+  for(int i = 0; i < input_args->n_dim_data; i++) {
+    if(i != input_args->axis) {
+      input_args->length_buffer *= 
+      (input_args->dimensions_data[i] > 0 ? input_args->dimensions_data[i] : 1);
     }
   }
 
-  if(buffer != (PyArrayObject *)Py_None) {
-    if(dimensions_buffer[0] != length_buffer) {
+  if(input_args->buffer != (PyArrayObject *)Py_None) {
+    if(input_args->dimensions_buffer[0] != input_args->length_buffer) {
       PyErr_SetString(PyExc_TypeError, 
       "Fourth argument has wrong length.");
-      return NULL;
+      return -1;
     }
   }
   
-  internal_buffer = calloc(length_buffer, sizeof(double));
-  if(internal_buffer == NULL) {
+  input_args->internal_buffer = calloc(input_args->length_buffer, 
+  sizeof(double));
+  if(input_args->internal_buffer == NULL) {
      PyErr_SetString(PyExc_TypeError, 
      "Couldn't allocate memory for the internal buffer.");
-     return NULL;
+     return -1;
   }
   
-  if(buffer != (PyArrayObject *)Py_None) {
-    for(int i = 0; i < length_buffer; i++) {
-      internal_buffer[i] = *(double *) PyArray_GETPTR1(buffer, i);
+  if(input_args->buffer != (PyArrayObject *)Py_None) {
+    for(int i = 0; i < input_args->length_buffer; i++) {
+      input_args->internal_buffer[i] = 
+      *(double *) PyArray_GETPTR1(input_args->buffer, i);
     }
   }
 
+  return 0;
+}
 
-  size_t *pos = calloc(n_dim_data, sizeof(size_t));
-  if(pos == NULL && n_dim_data > 0) {
+static PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
+{
+  static char *kwlist[] = {"input", "weights", "axis", "buffer", NULL};
+  const int initial_buffer_length = 2;
+  input_args_container input_args;
+  input_args.data = (PyArrayObject *)Py_None;
+  input_args.buffer = (PyArrayObject *)Py_None;
+  input_args.weights = (PyArrayObject *)Py_None;
+  input_args.scalar_weight = 1.0;
+  input_args.scalar_data = 0.0;
+  input_args.internal_buffer = NULL;
+  input_args.axis = 0;
+  input_args.input_is_scalar = false;
+  input_args.kwlist = kwlist;
+  input_args.n_dim_data = 0;
+  input_args.n_dim_weights = 0;
+  input_args.n_dim_buffer = -1;
+  input_args.dimensions_data = NULL;
+  input_args.dimensions_weights = NULL;
+  input_args.dimensions_buffer = NULL;
+  input_args.length_buffer = initial_buffer_length;
+
+  bool done = false;
+  double *buffer_ptr = NULL;
+  PyArrayObject *array_mean = (PyArrayObject *)Py_None;
+  npy_intp *output_dims = NULL;
+  
+   
+  if(parse_input(args, kwargs, &input_args) == -1) {
+    return NULL;
+  }
+  
+
+  size_t *pos = calloc(input_args.n_dim_data, sizeof(size_t));
+  if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
     return NULL;
   }
 
-  buffer_ptr = &internal_buffer[0];
-  if(n_dim_data == 0) {
-    rstats_mean(array_scalar, scalar_weight, buffer_ptr);
+  buffer_ptr = &input_args.internal_buffer[0];
+  if(input_args.n_dim_data == 0) {
+    rstats_mean(input_args.scalar_data, input_args.scalar_weight, buffer_ptr);
   }
   else {
     do { 
       done = false;
       while(!done) {
         double weight = 1.0;
-        if((PyObject *)weights != Py_None) {
-          weight = *(double *)PyArray_GetPtr(weights, pos);
+        if((PyObject *)input_args.weights != Py_None) {
+          weight = *(double *)PyArray_GetPtr(input_args.weights, pos);
         }
-        double val = *slice_axis(array, pos, dimensions_array, n_dim_data, axis,
+        double val = *slice_axis(input_args.data, pos, 
+        input_args.dimensions_data, input_args.n_dim_data, input_args.axis,
         &done);
         rstats_mean(val, weight, buffer_ptr);
       }
       buffer_ptr += 2;
-    } while(!increment_ignore_axis(pos, dimensions_array, n_dim_data, axis));
+    } while(!increment_ignore_axis(pos, input_args.dimensions_data, 
+    input_args.n_dim_data, input_args.axis));
   }
-  PyArrayObject *array_mean = NULL;
-  npy_intp *array_mean_dims = NULL;
-  if(n_dim_data > 1) {
-    array_mean_dims = malloc(sizeof(npy_intp) * (n_dim_data - 1));
-    if(array_mean_dims == NULL) {
+
+  if(input_args.n_dim_data > 1) {
+    output_dims = malloc(sizeof(npy_intp) * (input_args.n_dim_data - 1));
+    if(output_dims == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
       return NULL;
     }
     int k = 0;
-    for(int i = 0; i < n_dim_data; i++) {
-      if(i != axis) {
-        array_mean_dims[k++] = dimensions_array[i];
+    for(int i = 0; i < input_args.n_dim_data; i++) {
+      if(i != input_args.axis) {
+        output_dims[k++] = input_args.dimensions_data[i];
       }
     }
     array_mean = (PyArrayObject *) PyArray_SimpleNew
-    ((n_dim_data - 1), array_mean_dims, NPY_DOUBLE);
-    if(array_mean == NULL) {
+    ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
+    if((PyObject *)array_mean == Py_None) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
       return NULL;
     }
   
     free(pos);
-    pos = calloc((n_dim_data - 1), sizeof(size_t));
+    pos = calloc((input_args.n_dim_data - 1), sizeof(size_t));
     if(pos == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for index structure.");
       return NULL;
     }
 
-    buffer_ptr = &internal_buffer[0];
+    buffer_ptr = &input_args.internal_buffer[0];
     do { 
       double result = 0;
       rstats_mean_finalize(&result, buffer_ptr);
       buffer_ptr += 2;
       double *val = PyArray_GetPtr(array_mean, pos);
       *val = result;
-    } while(!increment(pos, array_mean_dims, n_dim_data - 1)); 
+    } while(!increment(pos, output_dims, input_args.n_dim_data - 1));
     
   }
   else {
     array_mean = (PyArrayObject *) PyArray_SimpleNew
     (0, NULL, NPY_DOUBLE);
-    if(array_mean == NULL) {
+    if((PyObject *)array_mean == Py_None) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
       return NULL;
     }
-    buffer_ptr = &internal_buffer[0];
+    buffer_ptr = &input_args.internal_buffer[0];
     double result = 0;
     rstats_mean_finalize(&result, buffer_ptr);
     double *ptr = (double*)PyArray_DATA(array_mean);
@@ -367,312 +413,141 @@ static PyObject *rstatspy_mean(PyObject *self, PyObject *args, PyObject* kwargs)
   }
 
   // Create external buffer if it doesn't exist yet.
-  if(object_raw_buffer == Py_None) {
-    buffer = (PyArrayObject *) PyArray_SimpleNew(1, &length_buffer, NPY_DOUBLE);
-    if(array_mean == NULL) {
+  if((PyObject *)input_args.buffer == Py_None) {
+   input_args.buffer = (PyArrayObject *) 
+   PyArray_SimpleNew(1, &input_args.length_buffer, NPY_DOUBLE);
+    if((PyObject *)array_mean == Py_None) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for external buffer.");
       return NULL;
     }
   }
   
-  for(int i = 0; i < length_buffer; i++) {
-    double *ptr = PyArray_GETPTR1(buffer, i);
-    *ptr = internal_buffer[i];
+  for(int i = 0; i < input_args.length_buffer; i++) {
+    double *ptr = PyArray_GETPTR1(input_args.buffer, i);
+    *ptr = input_args.internal_buffer[i];
   }
 
   free(pos);
-  free(internal_buffer);
-  free(array_mean_dims);
-  Py_DECREF(array);
-  Py_DECREF(weights);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_DECREF(input_args.data);
+  Py_DECREF(input_args.weights);
 
+    
   PyObject* tuple = PyTuple_New(2);
 
   if(!tuple) {
     return NULL;
   }
   PyTuple_SetItem(tuple, 0, (PyObject *)array_mean);
-  PyTuple_SetItem(tuple, 1, (PyObject *)buffer);
+  PyTuple_SetItem(tuple, 1, (PyObject *)input_args.buffer);
   
   return tuple;
 }
 
-static PyObject *rstatspy_variance(PyObject *self, PyObject *args, PyObject* kwargs)
+static PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
 {
-  PyArrayObject *array = (PyArrayObject *) Py_None;
-  PyArrayObject *buffer = (PyArrayObject *) Py_None;
-  PyArrayObject *weights = (PyArrayObject *) Py_None;
-  double scalar_weight = 1.0;
-  PyObject *object_raw_array = Py_None;
-  PyObject *object_raw_weights = Py_None;
-  PyObject *object_raw_buffer = Py_None;
-  double array_scalar;
-  double *internal_buffer = NULL;
-  int axis = 0;
+  static char *kwlist[] = {"input", "weights", "axis", "buffer", NULL};
+  const int initial_buffer_length = 3;
+  input_args_container input_args;
+  input_args.data = (PyArrayObject *)Py_None;
+  input_args.buffer = (PyArrayObject *)Py_None;
+  input_args.weights = (PyArrayObject *)Py_None;
+  input_args.scalar_weight = 1.0;
+  input_args.scalar_data = 0.0;
+  input_args.internal_buffer = NULL;
+  input_args.axis = 0;
+  input_args.input_is_scalar = false;
+  input_args.kwlist = kwlist;
+  input_args.n_dim_data = 0;
+  input_args.n_dim_weights = 0;
+  input_args.n_dim_buffer = -1;
+  input_args.dimensions_data = NULL;
+  input_args.dimensions_weights = NULL;
+  input_args.dimensions_buffer = NULL;
+  input_args.length_buffer = initial_buffer_length;
+
   bool done = false;
   double *buffer_ptr = NULL;
-  bool input_is_scalar = false;
-
-  static char *kwlist[] = {"input", "weights", "axis", "buffer", NULL};
+  PyArrayObject *array_mean = (PyArrayObject *) Py_None;
+  PyArrayObject *array_variance = (PyArrayObject *) Py_None;
+  npy_intp *output_dims = NULL;
   
-  if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OiO", kwlist, 
-  &object_raw_array, &object_raw_weights, &axis, &object_raw_buffer)) {
+  if(parse_input(args, kwargs, &input_args) == -1) {
     return NULL;
   }
-  
-  if(!PyArray_Check(object_raw_array)) {
-    if(!PyArray_IsAnyScalar(object_raw_array)) {
-      PyErr_SetString(PyExc_TypeError, "First argument is not a ndarray or scalar");
-      return NULL;
-    }
-  }
 
-  if(object_raw_weights != Py_None) {
-    if(!PyArray_Check(object_raw_weights)) {
-      if(!PyArray_IsAnyScalar(object_raw_weights)) {
-        PyErr_SetString(PyExc_TypeError, "Second argument is not a ndarray or scalar");
-        return NULL;
-      }
-    }
-  }
-  
-  if(object_raw_buffer != Py_None) {
-    if(!PyArray_Check(object_raw_buffer)) {
-      PyErr_SetString(PyExc_TypeError, "Fourth argument is not a ndarray");
-      return NULL;
-    }
-  }
-
-  int n_dim_data = 0;
-  if(!PyArray_IsAnyScalar(object_raw_array) && 
-  !PyArray_IsPythonNumber(object_raw_array)) {
-    array = (PyArrayObject *)
-    PyArray_FromAny(object_raw_array, NULL, 0, 0, NPY_ARRAY_ALIGNED, NULL);
-    if(!is_float64((PyObject *)array)) {
-      PyErr_SetString(PyExc_TypeError, "Argument 1 is not of type NPY_FLOAT64");
-      return NULL;
-    }
-    n_dim_data = PyArray_NDIM(array);
-  }
-  else {
-    input_is_scalar = true;
-    if(is_python_float(object_raw_array)) {
-      array_scalar = PyFloat_AsDouble(object_raw_array);
-    }
-    else {
-      array = (PyArrayObject *)
-      PyArray_FromAny(object_raw_array, NULL, 0, 0, NPY_ARRAY_ALIGNED, NULL);
-      if(!is_float64((PyObject *) array)) {
-        PyErr_SetString(PyExc_TypeError, 
-        "Argument 1 is neither of type NPY_FLOAT64 nor a python float");
-        return NULL;
-      }
-      array_scalar = *(double*)PyArray_DATA(array);
-    }
-  }
-
-  int n_dim_weights = 0;
-  if(object_raw_weights != Py_None) {
-    if(!PyArray_IsAnyScalar(object_raw_weights) && 
-    !PyArray_IsPythonNumber(object_raw_weights)) {
-      weights = (PyArrayObject *)
-      PyArray_FromAny(object_raw_weights, NULL, 0, 0, NPY_ARRAY_ALIGNED, NULL);
-      if(!is_float64((PyObject *)weights)) {
-        PyErr_SetString(PyExc_TypeError, "Argument 2 is not of type NPY_FLOAT64");
-        return NULL;
-      }
-      n_dim_weights = PyArray_NDIM(weights);
-      if(input_is_scalar) {
-        PyErr_SetString(PyExc_TypeError, "Argument 1 is scalar while argument 2 is not");
-        return NULL;
-      }
-    }
-    else {
-      if(!input_is_scalar) {
-        PyErr_SetString(PyExc_TypeError, "Argument 2 is scalar while argument 1 is not");
-        return NULL;
-      }
-      if(is_python_float(object_raw_array)) {
-        scalar_weight = PyFloat_AsDouble(object_raw_weights);
-      }
-      else {
-        weights = (PyArrayObject *)
-        PyArray_FromAny(object_raw_weights, NULL, 0, 0, NPY_ARRAY_ALIGNED, NULL);
-        if(!is_float64((PyObject *) weights)) {
-          PyErr_SetString(PyExc_TypeError, 
-          "Argument 2 is neither of type NPY_FLOAT64 nor a python float");
-          return NULL;
-        }
-        scalar_weight = *(double*)PyArray_DATA(weights);
-      }
-    }
-  }
-
-  if(object_raw_weights != Py_None) {
-    if(n_dim_data != n_dim_weights) {
-      PyErr_SetString(PyExc_TypeError, 
-      "Argument 1 and argument 2 don't have the same number of dimensions");
-      return NULL;
-    }
-  }
-
-  if(object_raw_buffer != Py_None) {
-    buffer = (PyArrayObject *)
-    PyArray_FromAny(object_raw_buffer, NULL, 0, 0, 
-    NPY_ARRAY_ALIGNED | NPY_ARRAY_WRITEABLE, NULL);     
-  }
- 
-  int n_dim_buffer = -1;
-  if(object_raw_buffer != Py_None) {
-    n_dim_buffer = PyArray_NDIM(buffer);
-  }
-
-  if((axis < 0 || axis >= n_dim_data) && !input_is_scalar) {
-    PyErr_SetString(PyExc_TypeError, 
-    "Axis must be non negative and within the dimensions of array");
-    return NULL;
-  }
- 
-  if(object_raw_buffer != Py_None) {
-    if(n_dim_buffer != 1) {
-      PyErr_SetString(PyExc_TypeError, 
-      "Fourth argument is expected to be 1-dimensional");
-      return NULL;
-    }
-  }
-  
-  npy_intp *dimensions_array = NULL;
-  if(!input_is_scalar) {
-    dimensions_array = PyArray_DIMS(array);
-    for(size_t i = 0; i < n_dim_data; i++) {
-      if(dimensions_array[i] == 0) {
-        PyErr_SetString(PyExc_TypeError, 
-        "Dimensions can't be 0");
-        return NULL;
-      }
-    }
-  }
-  
-  npy_intp *dimensions_weights = NULL;
-  if(object_raw_weights != Py_None) {
-    if(!input_is_scalar) {
-      dimensions_weights = PyArray_DIMS(weights);
-    }
-    for(size_t i = 0; i < n_dim_data; i++) {
-      if(dimensions_weights[i] != dimensions_array[i]) {
-        PyErr_SetString(PyExc_TypeError, 
-        "Dimensions of argument 1 and argument 2 are not matching!");
-        return NULL;
-      }
-    }
-  }
-  
-  npy_intp *dimensions_buffer = NULL;
-  if(buffer != (PyArrayObject *)Py_None) {
-    dimensions_buffer = PyArray_DIMS(buffer);
-  }
-   
-  npy_intp length_buffer = 2;
- 
-  for(int i = 0; i < n_dim_data; i++) {
-    if(i != axis) {
-      length_buffer *= (dimensions_array[i] > 0 ? dimensions_array[i] : 1);
-    }
-  }
-
-  if(buffer != (PyArrayObject *)Py_None) {
-    if(dimensions_buffer[0] != length_buffer) {
-      PyErr_SetString(PyExc_TypeError, 
-      "Fourth argument has wrong length.");
-      return NULL;
-    }
-  }
-  
-  internal_buffer = calloc(length_buffer, sizeof(double));
-  if(internal_buffer == NULL) {
-     PyErr_SetString(PyExc_TypeError, 
-     "Couldn't allocate memory for the internal buffer.");
-     return NULL;
-  }
-  
-  if(buffer != (PyArrayObject *)Py_None) {
-    for(int i = 0; i < length_buffer; i++) {
-      internal_buffer[i] = *(double *) PyArray_GETPTR1(buffer, i);
-    }
-  }
-
-
-  size_t *pos = calloc(n_dim_data, sizeof(size_t));
-  if(pos == NULL && n_dim_data > 0) {
+  size_t *pos = calloc(input_args.n_dim_data, sizeof(size_t));
+  if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
     return NULL;
   }
 
-  buffer_ptr = &internal_buffer[0];
-  if(n_dim_data == 0) {
-    rstats_mean(array_scalar, scalar_weight, buffer_ptr);
+  buffer_ptr = &input_args.internal_buffer[0];
+  if(input_args.n_dim_data == 0) {
+    rstats_variance(input_args.scalar_data, input_args.scalar_weight, buffer_ptr);
   }
   else {
     do { 
       done = false;
       while(!done) {
         double weight = 1.0;
-        if((PyObject *)weights != Py_None) {
-          weight = *(double *)PyArray_GetPtr(weights, pos);
+        if((PyObject *)input_args.weights != Py_None) {
+          weight = *(double *)PyArray_GetPtr(input_args.weights, pos);
         }
-        double val = *slice_axis(array, pos, dimensions_array, n_dim_data, axis,
+        double val = *slice_axis(input_args.data, pos, 
+        input_args.dimensions_data, input_args.n_dim_data, input_args.axis,
         &done);
         rstats_variance(val, weight, buffer_ptr);
       }
-      buffer_ptr += 2;
-    } while(!increment_ignore_axis(pos, dimensions_array, n_dim_data, axis));
+      buffer_ptr += 3;
+    } while(!increment_ignore_axis(pos, input_args.dimensions_data, 
+    input_args.n_dim_data, input_args.axis));
   }
-  PyArrayObject *array_mean = NULL;
-  PyArrayObject *array_variance = NULL;
-  npy_intp *array_mean_dims = NULL;
-  if(n_dim_data > 1) {
-    array_mean_dims = malloc(sizeof(npy_intp) * (n_dim_data - 1));
-    if(array_mean_dims == NULL) {
+  
+  if(input_args.n_dim_data > 1) {
+    output_dims = malloc(sizeof(npy_intp) * (input_args.n_dim_data - 1));
+    if(output_dims == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
       return NULL;
     }
     int k = 0;
-    for(int i = 0; i < n_dim_data; i++) {
-      if(i != axis) {
-        array_mean_dims[k++] = dimensions_array[i];
+    for(int i = 0; i < input_args.n_dim_data; i++) {
+      if(i != input_args.axis) {
+        output_dims[k++] = input_args.dimensions_data[i];
       }
     }
     array_mean = (PyArrayObject *) PyArray_SimpleNew
-    ((n_dim_data - 1), array_mean_dims, NPY_DOUBLE);
+    ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
     array_variance = (PyArrayObject *) PyArray_SimpleNew
-    ((n_dim_data - 1), array_mean_dims, NPY_DOUBLE);
-    if(array_mean == NULL || array_variance == NULL) {
+    ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
+    if((PyObject *)array_mean == Py_None || (PyObject *)array_variance == Py_None) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
       return NULL;
     }
   
     free(pos);
-    pos = calloc((n_dim_data - 1), sizeof(size_t));
+    pos = calloc((input_args.n_dim_data - 1), sizeof(size_t));
     if(pos == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for index structure.");
       return NULL;
     }
 
-    buffer_ptr = &internal_buffer[0];
+    buffer_ptr = &input_args.internal_buffer[0];
     do { 
       double result[2] = {0};
       rstats_variance_finalize(result, buffer_ptr);
-      buffer_ptr += 2;
+      buffer_ptr += 3;
       double *val = PyArray_GetPtr(array_mean, pos);
       *val = result[0];
       val = PyArray_GetPtr(array_variance, pos);
       *val = result[1];
-    } while(!increment(pos, array_mean_dims, n_dim_data - 1)); 
+    } while(!increment(pos, output_dims, input_args.n_dim_data - 1)); 
     
   }
   else {
@@ -680,40 +555,43 @@ static PyObject *rstatspy_variance(PyObject *self, PyObject *args, PyObject* kwa
     (0, NULL, NPY_DOUBLE);
     array_variance = (PyArrayObject *) PyArray_SimpleNew
     (0, NULL, NPY_DOUBLE);
-    if(array_mean == NULL || array_variance == NULL) {
+    if((PyObject *)array_mean == Py_None || (PyObject *)array_variance == Py_None) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
       return NULL;
     }
-    buffer_ptr = &internal_buffer[0];
+    buffer_ptr = &input_args.internal_buffer[0];
     double result[2] = {0};
     rstats_variance_finalize(result, buffer_ptr);
     double *ptr = (double*)PyArray_DATA(array_mean);
     *ptr = result[0];
     ptr = (double*)PyArray_DATA(array_variance);
-    *ptr = result[0];
+    *ptr = result[1];
   }
 
   // Create external buffer if it doesn't exist yet.
-  if(object_raw_buffer == Py_None) {
-    buffer = (PyArrayObject *) PyArray_SimpleNew(1, &length_buffer, NPY_DOUBLE);
-    if(array_mean == NULL) {
+  if((PyObject *)input_args.buffer == Py_None) {
+    input_args.buffer = (PyArrayObject *) PyArray_SimpleNew(1, 
+    &input_args.length_buffer, NPY_DOUBLE);
+    if((PyObject *)input_args.buffer == Py_None) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for external buffer.");
       return NULL;
     }
   }
   
-  for(int i = 0; i < length_buffer; i++) {
-    double *ptr = PyArray_GETPTR1(buffer, i);
-    *ptr = internal_buffer[i];
+  for(int i = 0; i < input_args.length_buffer; i++) {
+    double *ptr = PyArray_GETPTR1(input_args.buffer, i);
+    *ptr = input_args.internal_buffer[i];
   }
 
   free(pos);
-  free(internal_buffer);
-  free(array_mean_dims);
-  Py_DECREF(array);
-  Py_DECREF(weights);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_DECREF(input_args.data);
+  Py_DECREF(input_args.weights);
+
+  
 
   PyObject* tuple = PyTuple_New(3);
 
@@ -721,17 +599,190 @@ static PyObject *rstatspy_variance(PyObject *self, PyObject *args, PyObject* kwa
     return NULL;
   }
   PyTuple_SetItem(tuple, 0, (PyObject *)array_mean);
-  PyTuple_SetItem(tuple, 0, (PyObject *)array_variance);
-  PyTuple_SetItem(tuple, 1, (PyObject *)buffer);
+  PyTuple_SetItem(tuple, 1, (PyObject *)array_variance);
+  PyTuple_SetItem(tuple, 2, (PyObject *)input_args.buffer);
+  
+  return tuple;
+}
+
+static PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
+{
+  static char *kwlist[] = {"input", "weights", "axis", "buffer", NULL};
+  const int initial_buffer_length = 4;
+  input_args_container input_args;
+  input_args.data = (PyArrayObject *)Py_None;
+  input_args.buffer = (PyArrayObject *)Py_None;
+  input_args.weights = (PyArrayObject *)Py_None;
+  input_args.scalar_weight = 1.0;
+  input_args.scalar_data = 0.0;
+  input_args.internal_buffer = NULL;
+  input_args.axis = 0;
+  input_args.input_is_scalar = false;
+  input_args.kwlist = kwlist;
+  input_args.n_dim_data = 0;
+  input_args.n_dim_weights = 0;
+  input_args.n_dim_buffer = -1;
+  input_args.dimensions_data = NULL;
+  input_args.dimensions_weights = NULL;
+  input_args.dimensions_buffer = NULL;
+  input_args.length_buffer = initial_buffer_length;
+
+  bool done = false;
+  double *buffer_ptr = NULL;
+  PyArrayObject *array_mean = (PyArrayObject *) Py_None;
+  PyArrayObject *array_variance = (PyArrayObject *) Py_None;
+  PyArrayObject *array_skewness = (PyArrayObject *) Py_None;
+  npy_intp *output_dims = NULL;
+  
+  if(parse_input(args, kwargs, &input_args) == -1) {
+    return NULL;
+  }
+
+  size_t *pos = calloc(input_args.n_dim_data, sizeof(size_t));
+  if(pos == NULL && input_args.n_dim_data > 0) {
+    PyErr_SetString(PyExc_TypeError, 
+    "Couldn't allocate memory for index structure.");
+    return NULL;
+  }
+
+  buffer_ptr = &input_args.internal_buffer[0];
+  if(input_args.n_dim_data == 0) {
+    rstats_skewness(input_args.scalar_data, input_args.scalar_weight, buffer_ptr);
+  }
+  else {
+    do { 
+      done = false;
+      while(!done) {
+        double weight = 1.0;
+        if((PyObject *)input_args.weights != Py_None) {
+          weight = *(double *)PyArray_GetPtr(input_args.weights, pos);
+        }
+        double val = *slice_axis(input_args.data, pos, 
+        input_args.dimensions_data, input_args.n_dim_data, input_args.axis,
+        &done);
+        rstats_skewness(val, weight, buffer_ptr);
+      }
+      buffer_ptr += 3;
+    } while(!increment_ignore_axis(pos, input_args.dimensions_data, 
+    input_args.n_dim_data, input_args.axis));
+  }
+  
+  if(input_args.n_dim_data > 1) {
+    output_dims = malloc(sizeof(npy_intp) * (input_args.n_dim_data - 1));
+    if(output_dims == NULL) {
+      PyErr_SetString(PyExc_TypeError, 
+      "Couldn't allocate memory for mean array.");
+      return NULL;
+    }
+    int k = 0;
+    for(int i = 0; i < input_args.n_dim_data; i++) {
+      if(i != input_args.axis) {
+        output_dims[k++] = input_args.dimensions_data[i];
+      }
+    }
+    array_mean = (PyArrayObject *) PyArray_SimpleNew
+    ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
+    array_variance = (PyArrayObject *) PyArray_SimpleNew
+    ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
+    array_skewness = (PyArrayObject *) PyArray_SimpleNew
+    ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
+    if((PyObject *)array_mean == Py_None || (PyObject *)array_variance ==
+    Py_None || (PyObject *)array_skewness == Py_None) {
+      PyErr_SetString(PyExc_TypeError, 
+      "Couldn't allocate memory for mean array.");
+      return NULL;
+    }
+  
+    free(pos);
+    pos = calloc((input_args.n_dim_data - 1), sizeof(size_t));
+    if(pos == NULL) {
+      PyErr_SetString(PyExc_TypeError, 
+      "Couldn't allocate memory for index structure.");
+      return NULL;
+    }
+
+    buffer_ptr = &input_args.internal_buffer[0];
+    do { 
+      double result[2] = {0};
+      rstats_skewness_finalize(result, buffer_ptr);
+      buffer_ptr += 3;
+      double *val = PyArray_GetPtr(array_mean, pos);
+      *val = result[0];
+      val = PyArray_GetPtr(array_variance, pos);
+      *val = result[1];
+      val = PyArray_GetPtr(array_skewness, pos);
+      *val = result[2];
+    } while(!increment(pos, output_dims, input_args.n_dim_data - 1)); 
+    
+  }
+  else {
+    array_mean = (PyArrayObject *) PyArray_SimpleNew
+    (0, NULL, NPY_DOUBLE);
+    array_variance = (PyArrayObject *) PyArray_SimpleNew
+    (0, NULL, NPY_DOUBLE);
+    array_skewness = (PyArrayObject *) PyArray_SimpleNew
+    (0, NULL, NPY_DOUBLE);
+    if((PyObject *)array_mean == Py_None || (PyObject *)array_variance == 
+    Py_None || (PyObject *)array_skewness == Py_None) {
+      PyErr_SetString(PyExc_TypeError, 
+      "Couldn't allocate memory for mean array.");
+      return NULL;
+    }
+    buffer_ptr = &input_args.internal_buffer[0];
+    double result[2] = {0};
+    rstats_skewness_finalize(result, buffer_ptr);
+    double *ptr = (double*)PyArray_DATA(array_mean);
+    *ptr = result[0];
+    ptr = (double*)PyArray_DATA(array_variance);
+    *ptr = result[1];
+    ptr = (double*)PyArray_DATA(array_skewness);
+    *ptr = result[2];
+  }
+
+  // Create external buffer if it doesn't exist yet.
+  if((PyObject *)input_args.buffer == Py_None) {
+    input_args.buffer = (PyArrayObject *) PyArray_SimpleNew(1, 
+    &input_args.length_buffer, NPY_DOUBLE);
+    if((PyObject *)input_args.buffer == Py_None) {
+      PyErr_SetString(PyExc_TypeError, 
+      "Couldn't allocate memory for external buffer.");
+      return NULL;
+    }
+  }
+  
+  for(int i = 0; i < input_args.length_buffer; i++) {
+    double *ptr = PyArray_GETPTR1(input_args.buffer, i);
+    *ptr = input_args.internal_buffer[i];
+  }
+
+  free(pos);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_DECREF(input_args.data);
+  Py_DECREF(input_args.weights);
+
+  
+
+  PyObject* tuple = PyTuple_New(4);
+
+  if(!tuple) {
+    return NULL;
+  }
+  PyTuple_SetItem(tuple, 0, (PyObject *)array_mean);
+  PyTuple_SetItem(tuple, 1, (PyObject *)array_variance);
+  PyTuple_SetItem(tuple, 2, (PyObject *)array_skewness);
+  PyTuple_SetItem(tuple, 3, (PyObject *)input_args.buffer);
   
   return tuple;
 }
 
 static PyMethodDef rstats_methods[] = {
-    {"rstatspy_mean", (PyCFunction)rstatspy_mean, 
+    {"mean", (PyCFunction)mean, 
     METH_VARARGS | METH_KEYWORDS, "Running mean function"},
-    {"rstatspy_variance", (PyCFunction)rstatspy_variance, 
+    {"variance", (PyCFunction)variance, 
     METH_VARARGS | METH_KEYWORDS, "Running variance function"},
+    {"skewness", (PyCFunction)skewness, 
+    METH_VARARGS | METH_KEYWORDS, "Running skewness function"},
     {NULL, NULL, 0, NULL}};
 
 static struct PyModuleDef rstats_module = {PyModuleDef_HEAD_INIT, "rstatspy",
