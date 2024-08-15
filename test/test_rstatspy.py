@@ -367,3 +367,56 @@ try:
     #print(mean)
 except Exception as e:
     print(f"Caught an exception: {e}")
+
+try:
+    print("0D array test")
+    mean, variance, skewness, kurtosis, buffer = rstatspy.kurtosis(5.0)
+    mean, variance,skewness, kurtosis, buffer = rstatspy.kurtosis(0.0, axis=0, buffer=buffer)
+    mean, variance, skewness, kurtosis, buffer = rstatspy.kurtosis(100.0, axis=0, buffer=buffer)
+    mean, variance, skewness, kurtosis, buffer = rstatspy.kurtosis(5.0, axis=0, buffer=buffer)
+    mean, variance, skewness, kurtosis, buffer = rstatspy.kurtosis(254500.0, axis=0, buffer=buffer)
+    mean, variance, skewness, kurtosis, buffer = rstatspy.kurtosis(25450.0, axis=0, buffer=buffer)
+    mean, variance, skewness, kurtosis, buffer = rstatspy.kurtosis(25450.0, axis=0, buffer=buffer)
+    print(mean)
+    print(variance)
+    print(skewness)
+    print(kurtosis)
+    print(buffer)
+except Exception as e:
+    print(f"Caught an exception: {e}")
+try:
+    print("3D array test")
+    data = np.random.rand(5, 5, 500000)
+    weights = np.ones((5, 5, 500000))
+    #print(data)
+    #print(data.shape)
+    *_, moment_p, buffer = (
+        rstatspy.central_moment(data, 8, axis=2, weights=weights))
+    mean_cmp = np.var(data, axis=2)
+    print("P-th Moment")
+    print(moment_p)
+    print(mean_cmp)
+    data = np.random.rand(5, 5, 500000)
+    print(data.shape)
+    *_, moment_p, buffer = (
+        rstatspy.central_moment(data, 8, buffer=buffer, axis=2, weights=weights))
+    print("P-th Moment")
+    print(moment_p)
+    #print(mean)
+except Exception as e:
+    print(f"Caught an exception: {e}")
+
+
+try:
+    print("0D array test")
+    *_, moment_p, buffer = rstatspy.kurtosis(5.0)
+    *_, moment_p, buffer = rstatspy.central_moment(0.0, 8, axis=2)
+    *_, moment_p, buffer = rstatspy.central_moment(100.0, 8, axis=0, buffer=buffer)
+    *_, moment_p, buffer = rstatspy.central_moment(5.0, 8, axis=0, buffer=buffer)
+    *_, moment_p, buffer = rstatspy.central_moment(254500.0, 8, axis=0, buffer=buffer)
+    *_, moment_p, buffer = rstatspy.central_moment(25450.0, 8, axis=0, buffer=buffer)
+    *_, moment_p, buffer = rstatspy.central_moment(25450.0, 8, axis=0, buffer=buffer)
+    print(moment_p)
+    print(buffer)
+except Exception as e:
+    print(f"Caught an exception: {e}")

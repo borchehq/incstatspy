@@ -28,6 +28,8 @@ typedef struct input_args {
   npy_intp *dimensions_weights;
   npy_intp *dimensions_buffer;
   npy_intp length_buffer;
+  bool parse_p;
+  int p;
 } input_args_container;
 
 
@@ -105,10 +107,26 @@ input_args_container *input_args) {
   PyObject *object_raw_weights = Py_None;
   PyObject *object_raw_buffer = Py_None;
 
-  if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OiO", input_args->kwlist, 
-  &object_raw_data, &object_raw_weights, &(input_args->axis),
-  &object_raw_buffer)) {
-    return -1;
+  if(!input_args->parse_p) {
+    if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OiO", input_args->kwlist, 
+    &object_raw_data, &object_raw_weights, &(input_args->axis),
+    &object_raw_buffer)) {
+      return -1;
+    }
+  }
+  else {
+    if(!PyArg_ParseTupleAndKeywords(args, kwargs, "Oi|OiO", input_args->kwlist, 
+      &object_raw_data, &input_args->p, &object_raw_weights, &(input_args->axis),
+      &object_raw_buffer)) {
+        return -1;
+    }
+     input_args->length_buffer = input_args->p + 1;
+  }
+  
+  if(input_args->parse_p && input_args->p < 1) {
+      PyErr_SetString(PyExc_TypeError, 
+      "p must be greater than 0");
+      return -1;
   }
 
   if(!PyArray_Check(object_raw_data)) {
@@ -317,7 +335,8 @@ static PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
   input_args.dimensions_weights = NULL;
   input_args.dimensions_buffer = NULL;
   input_args.length_buffer = initial_buffer_length;
-
+  input_args.parse_p = false;
+  input_args.p = -1;
   bool done = false;
   double *buffer_ptr = NULL;
   PyArrayObject *array_mean = (PyArrayObject *)Py_None;
@@ -467,7 +486,8 @@ static PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
   input_args.dimensions_weights = NULL;
   input_args.dimensions_buffer = NULL;
   input_args.length_buffer = initial_buffer_length;
-
+  input_args.parse_p = false;
+  input_args.p = -1;
   bool done = false;
   double *buffer_ptr = NULL;
   PyArrayObject *array_mean = (PyArrayObject *) Py_None;
@@ -626,7 +646,8 @@ static PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
   input_args.dimensions_weights = NULL;
   input_args.dimensions_buffer = NULL;
   input_args.length_buffer = initial_buffer_length;
-
+  input_args.parse_p = false;
+  input_args.p = -1;
   bool done = false;
   double *buffer_ptr = NULL;
   PyArrayObject *array_mean = (PyArrayObject *) Py_None;
@@ -797,7 +818,8 @@ static PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
   input_args.dimensions_weights = NULL;
   input_args.dimensions_buffer = NULL;
   input_args.length_buffer = initial_buffer_length;
-
+  input_args.parse_p = false;
+  input_args.p = -1;
   bool done = false;
   double *buffer_ptr = NULL;
   PyArrayObject *array_mean = (PyArrayObject *) Py_None;
@@ -908,8 +930,8 @@ static PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
       return NULL;
     }
     buffer_ptr = &input_args.internal_buffer[0];
-    double result[2] = {0};
-    rstats_skewness_finalize(result, buffer_ptr);
+    double result[4] = {0};
+    rstats_kurtosis_finalize(result, buffer_ptr);
     double *ptr = (double*)PyArray_DATA(array_mean);
     *ptr = result[0];
     ptr = (double*)PyArray_DATA(array_variance);
@@ -958,6 +980,189 @@ static PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
   return tuple;
 }
 
+static PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
+{
+  static char *kwlist[] = {"input", "p", "weights", "axis", "buffer", NULL};
+  input_args_container input_args;
+  input_args.data = (PyArrayObject *)Py_None;
+  input_args.buffer = (PyArrayObject *)Py_None;
+  input_args.weights = (PyArrayObject *)Py_None;
+  input_args.scalar_weight = 1.0;
+  input_args.scalar_data = 0.0;
+  input_args.internal_buffer = NULL;
+  input_args.axis = 0;
+  input_args.input_is_scalar = false;
+  input_args.kwlist = kwlist;
+  input_args.n_dim_data = 0;
+  input_args.n_dim_weights = 0;
+  input_args.n_dim_buffer = -1;
+  input_args.dimensions_data = NULL;
+  input_args.dimensions_weights = NULL;
+  input_args.dimensions_buffer = NULL;
+  input_args.parse_p = true;
+  input_args.p = -1;
+  bool done = false;
+  double *buffer_ptr = NULL;
+  PyArrayObject **central_moment = (PyArrayObject **) Py_None;
+  PyArrayObject *array_mean = (PyArrayObject *) Py_None;
+  PyArrayObject *array_variance = (PyArrayObject *) Py_None;
+  PyArrayObject *array_skewness = (PyArrayObject *) Py_None;
+  PyArrayObject *array_kurtosis = (PyArrayObject *) Py_None;
+  npy_intp *output_dims = NULL;
+  
+  if(parse_input(args, kwargs, &input_args) == -1) {
+    return NULL;
+  }
+
+  central_moment = malloc(sizeof(PyArrayObject *) * input_args.p);
+  if(central_moment == NULL) {
+     PyErr_SetString(PyExc_TypeError, 
+    "Couldn't allocate memory for results.");
+    return NULL;
+  }
+  size_t *pos = calloc(input_args.n_dim_data, sizeof(size_t));
+  if(pos == NULL && input_args.n_dim_data > 0) {
+    PyErr_SetString(PyExc_TypeError, 
+    "Couldn't allocate memory for index structure.");
+    return NULL;
+  }
+
+  buffer_ptr = &input_args.internal_buffer[0];
+  if(input_args.n_dim_data == 0) {
+    rstats_central_moment(input_args.scalar_data, input_args.scalar_weight, buffer_ptr, input_args.p);
+  }
+  else {
+    do { 
+      done = false;
+      while(!done) {
+        double weight = 1.0;
+        if((PyObject *)input_args.weights != Py_None) {
+          weight = *(double *)PyArray_GetPtr(input_args.weights, pos);
+        }
+        double val = *slice_axis(input_args.data, pos, 
+        input_args.dimensions_data, input_args.n_dim_data, input_args.axis,
+        &done);
+        rstats_central_moment(val, weight, buffer_ptr, input_args.p);
+      }
+      buffer_ptr += input_args.p + 1;
+    } while(!increment_ignore_axis(pos, input_args.dimensions_data, 
+    input_args.n_dim_data, input_args.axis));
+  }
+  
+  if(input_args.n_dim_data > 1) {
+    output_dims = malloc(sizeof(npy_intp) * (input_args.n_dim_data - 1));
+    if(output_dims == NULL) {
+      PyErr_SetString(PyExc_TypeError, 
+      "Couldn't allocate memory for mean array.");
+      return NULL;
+    }
+    int k = 0;
+    for(int i = 0; i < input_args.n_dim_data; i++) {
+      if(i != input_args.axis) {
+        output_dims[k++] = input_args.dimensions_data[i];
+      }
+    }
+
+    for(int k = 0; k < input_args.p; k++) {
+      central_moment[k] = (PyArrayObject *) PyArray_SimpleNew
+      ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
+      if((PyObject *) central_moment[k] == Py_None) {
+        PyErr_SetString(PyExc_TypeError, 
+        "Couldn't allocate memory for mean array.");
+        return NULL;
+      }
+    }
+  
+    free(pos);
+    pos = calloc((input_args.n_dim_data - 1), sizeof(size_t));
+    if(pos == NULL) {
+      PyErr_SetString(PyExc_TypeError, 
+      "Couldn't allocate memory for index structure.");
+      return NULL;
+    }
+  
+    double *result = calloc(input_args.p, sizeof(double));
+    buffer_ptr = &input_args.internal_buffer[0];
+    if(result == NULL) {
+      PyErr_SetString(PyExc_TypeError, 
+      "Couldn't allocate memory for results.");
+      return NULL;
+    }
+    do {  
+      rstats_central_moment_finalize(result, buffer_ptr, input_args.p);
+      buffer_ptr += input_args.p + 1;
+      for(int k = 0; k < input_args.p; k++) {
+        double *val = PyArray_GetPtr(central_moment[k], pos);
+        *val = result[k];
+      }
+    } while(!increment(pos, output_dims, input_args.n_dim_data - 1)); 
+    free(result);
+  }
+  else {
+    for(int k = 0; k < input_args.p; k++) {
+      central_moment[k] = (PyArrayObject *) PyArray_SimpleNew
+      (0, NULL, NPY_DOUBLE);
+      if((PyObject *) central_moment[k] == Py_None) {
+        PyErr_SetString(PyExc_TypeError, 
+        "Couldn't allocate memory for mean array.");
+        return NULL;
+      }
+    }
+    
+    buffer_ptr = &input_args.internal_buffer[0];
+    double *result = calloc(input_args.p, sizeof(double));
+    if(result == NULL) {
+      PyErr_SetString(PyExc_TypeError, 
+      "Couldn't allocate memory for results.");
+      return NULL;
+    }
+    rstats_central_moment_finalize(result, buffer_ptr, input_args.p);
+    for(int k = 0; k < input_args.p; k++) {
+      double *val = PyArray_GetPtr(central_moment[k], pos);
+      *val = result[k];
+    }
+    free(result);
+  }
+  
+  // Create external buffer if it doesn't exist yet.
+  if((PyObject *)input_args.buffer == Py_None) {
+    input_args.buffer = (PyArrayObject *) PyArray_SimpleNew(1, 
+    &input_args.length_buffer, NPY_DOUBLE);
+    if((PyObject *)input_args.buffer == Py_None) {
+      PyErr_SetString(PyExc_TypeError, 
+      "Couldn't allocate memory for external buffer.");
+      return NULL;
+    }
+  }
+ 
+  for(int i = 0; i < input_args.length_buffer; i++) {
+    double *ptr = PyArray_GETPTR1(input_args.buffer, i);
+    *ptr = input_args.internal_buffer[i];
+  }
+
+  free(pos);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_DECREF(input_args.data);
+  Py_DECREF(input_args.weights);
+
+  
+
+  PyObject* tuple = PyTuple_New(input_args.p + 1);
+
+  if(!tuple) {
+    return NULL;
+  }
+
+  for(int k = 0; k < input_args.p; k++) {
+    PyTuple_SetItem(tuple, k, (PyObject *)central_moment[k]);
+  }
+  PyTuple_SetItem(tuple, input_args.p, (PyObject *)input_args.buffer);
+  
+  free(central_moment);
+  return tuple;
+}
+
 static PyMethodDef rstats_methods[] = {
     {"mean", (PyCFunction)mean, 
     METH_VARARGS | METH_KEYWORDS, "Running mean function"},
@@ -967,6 +1172,8 @@ static PyMethodDef rstats_methods[] = {
     METH_VARARGS | METH_KEYWORDS, "Running skewness function"},
     {"kurtosis", (PyCFunction)kurtosis, 
     METH_VARARGS | METH_KEYWORDS, "Running kurtosis function"},
+    {"central_moment", (PyCFunction)central_moment, 
+    METH_VARARGS | METH_KEYWORDS, "Running central moment function"},
     {NULL, NULL, 0, NULL}};
 
 static struct PyModuleDef rstats_module = {PyModuleDef_HEAD_INIT, "rstatspy",
