@@ -662,7 +662,7 @@ static PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
         &done);
         rstats_skewness(val, weight, buffer_ptr);
       }
-      buffer_ptr += 3;
+      buffer_ptr += 4;
     } while(!increment_ignore_axis(pos, input_args.dimensions_data, 
     input_args.n_dim_data, input_args.axis));
   }
@@ -703,9 +703,9 @@ static PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
 
     buffer_ptr = &input_args.internal_buffer[0];
     do { 
-      double result[2] = {0};
+      double result[3] = {0};
       rstats_skewness_finalize(result, buffer_ptr);
-      buffer_ptr += 3;
+      buffer_ptr += 4;
       double *val = PyArray_GetPtr(array_mean, pos);
       *val = result[0];
       val = PyArray_GetPtr(array_variance, pos);
@@ -729,7 +729,7 @@ static PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
       return NULL;
     }
     buffer_ptr = &input_args.internal_buffer[0];
-    double result[2] = {0};
+    double result[3] = {0};
     rstats_skewness_finalize(result, buffer_ptr);
     double *ptr = (double*)PyArray_DATA(array_mean);
     *ptr = result[0];
@@ -776,6 +776,188 @@ static PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
   return tuple;
 }
 
+static PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
+{
+  static char *kwlist[] = {"input", "weights", "axis", "buffer", NULL};
+  const int initial_buffer_length = 5;
+  input_args_container input_args;
+  input_args.data = (PyArrayObject *)Py_None;
+  input_args.buffer = (PyArrayObject *)Py_None;
+  input_args.weights = (PyArrayObject *)Py_None;
+  input_args.scalar_weight = 1.0;
+  input_args.scalar_data = 0.0;
+  input_args.internal_buffer = NULL;
+  input_args.axis = 0;
+  input_args.input_is_scalar = false;
+  input_args.kwlist = kwlist;
+  input_args.n_dim_data = 0;
+  input_args.n_dim_weights = 0;
+  input_args.n_dim_buffer = -1;
+  input_args.dimensions_data = NULL;
+  input_args.dimensions_weights = NULL;
+  input_args.dimensions_buffer = NULL;
+  input_args.length_buffer = initial_buffer_length;
+
+  bool done = false;
+  double *buffer_ptr = NULL;
+  PyArrayObject *array_mean = (PyArrayObject *) Py_None;
+  PyArrayObject *array_variance = (PyArrayObject *) Py_None;
+  PyArrayObject *array_skewness = (PyArrayObject *) Py_None;
+  PyArrayObject *array_kurtosis = (PyArrayObject *) Py_None;
+  npy_intp *output_dims = NULL;
+  
+  if(parse_input(args, kwargs, &input_args) == -1) {
+    return NULL;
+  }
+
+  size_t *pos = calloc(input_args.n_dim_data, sizeof(size_t));
+  if(pos == NULL && input_args.n_dim_data > 0) {
+    PyErr_SetString(PyExc_TypeError, 
+    "Couldn't allocate memory for index structure.");
+    return NULL;
+  }
+
+  buffer_ptr = &input_args.internal_buffer[0];
+  if(input_args.n_dim_data == 0) {
+    rstats_kurtosis(input_args.scalar_data, input_args.scalar_weight, buffer_ptr);
+  }
+  else {
+    do { 
+      done = false;
+      while(!done) {
+        double weight = 1.0;
+        if((PyObject *)input_args.weights != Py_None) {
+          weight = *(double *)PyArray_GetPtr(input_args.weights, pos);
+        }
+        double val = *slice_axis(input_args.data, pos, 
+        input_args.dimensions_data, input_args.n_dim_data, input_args.axis,
+        &done);
+        rstats_kurtosis(val, weight, buffer_ptr);
+      }
+      buffer_ptr += 5;
+    } while(!increment_ignore_axis(pos, input_args.dimensions_data, 
+    input_args.n_dim_data, input_args.axis));
+  }
+  
+  if(input_args.n_dim_data > 1) {
+    output_dims = malloc(sizeof(npy_intp) * (input_args.n_dim_data - 1));
+    if(output_dims == NULL) {
+      PyErr_SetString(PyExc_TypeError, 
+      "Couldn't allocate memory for mean array.");
+      return NULL;
+    }
+    int k = 0;
+    for(int i = 0; i < input_args.n_dim_data; i++) {
+      if(i != input_args.axis) {
+        output_dims[k++] = input_args.dimensions_data[i];
+      }
+    }
+    array_mean = (PyArrayObject *) PyArray_SimpleNew
+    ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
+    array_variance = (PyArrayObject *) PyArray_SimpleNew
+    ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
+    array_skewness = (PyArrayObject *) PyArray_SimpleNew
+    ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
+    array_kurtosis = (PyArrayObject *) PyArray_SimpleNew
+    ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
+    if((PyObject *)array_mean == Py_None || (PyObject *)array_variance ==
+    Py_None || (PyObject *)array_skewness == Py_None || 
+    (PyObject *)array_kurtosis == Py_None) {
+      PyErr_SetString(PyExc_TypeError, 
+      "Couldn't allocate memory for mean array.");
+      return NULL;
+    }
+  
+    free(pos);
+    pos = calloc((input_args.n_dim_data - 1), sizeof(size_t));
+    if(pos == NULL) {
+      PyErr_SetString(PyExc_TypeError, 
+      "Couldn't allocate memory for index structure.");
+      return NULL;
+    }
+
+    buffer_ptr = &input_args.internal_buffer[0];
+    do { 
+      double result[4] = {0};
+      rstats_kurtosis_finalize(result, buffer_ptr);
+      buffer_ptr += 5;
+      double *val = PyArray_GetPtr(array_mean, pos);
+      *val = result[0];
+      val = PyArray_GetPtr(array_variance, pos);
+      *val = result[1];
+      val = PyArray_GetPtr(array_skewness, pos);
+      *val = result[2];
+      val = PyArray_GetPtr(array_kurtosis, pos);
+      *val = result[3];
+    } while(!increment(pos, output_dims, input_args.n_dim_data - 1)); 
+    
+  }
+  else {
+    array_mean = (PyArrayObject *) PyArray_SimpleNew
+    (0, NULL, NPY_DOUBLE);
+    array_variance = (PyArrayObject *) PyArray_SimpleNew
+    (0, NULL, NPY_DOUBLE);
+    array_skewness = (PyArrayObject *) PyArray_SimpleNew
+    (0, NULL, NPY_DOUBLE);
+    array_kurtosis = (PyArrayObject *) PyArray_SimpleNew
+    (0, NULL, NPY_DOUBLE);
+    if((PyObject *)array_mean == Py_None || (PyObject *)array_variance == 
+    Py_None || (PyObject *)array_skewness == Py_None || (PyObject *)array_kurtosis == Py_None) {
+      PyErr_SetString(PyExc_TypeError, 
+      "Couldn't allocate memory for mean array.");
+      return NULL;
+    }
+    buffer_ptr = &input_args.internal_buffer[0];
+    double result[2] = {0};
+    rstats_skewness_finalize(result, buffer_ptr);
+    double *ptr = (double*)PyArray_DATA(array_mean);
+    *ptr = result[0];
+    ptr = (double*)PyArray_DATA(array_variance);
+    *ptr = result[1];
+    ptr = (double*)PyArray_DATA(array_skewness);
+    *ptr = result[2];
+    ptr = (double*)PyArray_DATA(array_kurtosis);
+    *ptr = result[3];
+  }
+
+  // Create external buffer if it doesn't exist yet.
+  if((PyObject *)input_args.buffer == Py_None) {
+    input_args.buffer = (PyArrayObject *) PyArray_SimpleNew(1, 
+    &input_args.length_buffer, NPY_DOUBLE);
+    if((PyObject *)input_args.buffer == Py_None) {
+      PyErr_SetString(PyExc_TypeError, 
+      "Couldn't allocate memory for external buffer.");
+      return NULL;
+    }
+  }
+  
+  for(int i = 0; i < input_args.length_buffer; i++) {
+    double *ptr = PyArray_GETPTR1(input_args.buffer, i);
+    *ptr = input_args.internal_buffer[i];
+  }
+
+  free(pos);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_DECREF(input_args.data);
+  Py_DECREF(input_args.weights);
+
+  
+
+  PyObject* tuple = PyTuple_New(5);
+
+  if(!tuple) {
+    return NULL;
+  }
+  PyTuple_SetItem(tuple, 0, (PyObject *)array_mean);
+  PyTuple_SetItem(tuple, 1, (PyObject *)array_variance);
+  PyTuple_SetItem(tuple, 2, (PyObject *)array_skewness);
+  PyTuple_SetItem(tuple, 3, (PyObject *)array_kurtosis);
+  PyTuple_SetItem(tuple, 4, (PyObject *)input_args.buffer);
+  
+  return tuple;
+}
+
 static PyMethodDef rstats_methods[] = {
     {"mean", (PyCFunction)mean, 
     METH_VARARGS | METH_KEYWORDS, "Running mean function"},
@@ -783,6 +965,8 @@ static PyMethodDef rstats_methods[] = {
     METH_VARARGS | METH_KEYWORDS, "Running variance function"},
     {"skewness", (PyCFunction)skewness, 
     METH_VARARGS | METH_KEYWORDS, "Running skewness function"},
+    {"kurtosis", (PyCFunction)kurtosis, 
+    METH_VARARGS | METH_KEYWORDS, "Running kurtosis function"},
     {NULL, NULL, 0, NULL}};
 
 static struct PyModuleDef rstats_module = {PyModuleDef_HEAD_INIT, "rstatspy",
