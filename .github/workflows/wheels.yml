@@ -13,6 +13,8 @@ on:
 jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
+    env: 
+      CIBW_BUILD: cp37-*
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -29,7 +31,7 @@ jobs:
         with:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
-          requires_python: 3.7
+          
 
   build_sdist:
     name: Build source distribution
