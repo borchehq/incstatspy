@@ -6,8 +6,8 @@ on:
   push:
     branches:
       - main
-  release:
-    types:
+#   release:
+#    types:
 #      - published
 
 jobs:
