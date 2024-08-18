@@ -5,11 +5,11 @@ include(CMakePrintHelpers)
 
 #Ensure the build uses the install RPATH
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
   # Set the RPATH to include a relative path to the shared library directory
   set(CMAKE_INSTALL_RPATH "@loader_path/lib")
-else()
+elseif(UNIX)
   set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
 endif()
 cmake_print_variables(CMAKE_HOST_SYSTEM_NAME)
