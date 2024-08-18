@@ -9,7 +9,7 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
   # Set the RPATH to include a relative path to the shared library directory
   set(CMAKE_INSTALL_RPATH "@loader_path/lib")
-elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+elseif(UNIX)
   set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
 endif()
 cmake_print_variables(CMAKE_HOST_SYSTEM_NAME)
