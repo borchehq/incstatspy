@@ -14,7 +14,6 @@ jobs:
   build_wheels:
     env: 
       CIBW_BUILD: "cp310-*"
-      CIBW_REPAIR_WHEEL_COMMAND: ""
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
