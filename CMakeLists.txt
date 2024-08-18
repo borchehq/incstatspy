@@ -11,7 +11,6 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
   set(CMAKE_INSTALL_RPATH "@loader_path/lib")
 elseif(UNIX)
   set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
-  set(CMAKE_INSTALL_RPATH "$ORIGIN")
 endif()
 cmake_print_variables(CMAKE_HOST_SYSTEM_NAME)
 # Optionally, if you want to append to an existing RPATH
@@ -32,6 +31,7 @@ cmake_print_variables(Python_NumPy_INCLUDE_DIRS)
 
 python_add_library(rstatspy MODULE "" WITH_SOABI)
 target_include_directories(rstatspy PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/rstats/src/rstats/include ${Python_NumPy_INCLUDE_DIRS})
+set_target_properties(rstatspy PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
 target_link_libraries(rstatspy PRIVATE rstats Python::NumPy)
 install(TARGETS rstatspy DESTINATION .)
 
