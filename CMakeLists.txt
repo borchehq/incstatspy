@@ -11,7 +11,7 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
   set(CMAKE_INSTALL_RPATH "@loader_path/lib")
 elseif(UNIX)
   set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
-  set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
+  set(CMAKE_INSTALL_RPATH "$ORIGIN")
 endif()
 cmake_print_variables(CMAKE_HOST_SYSTEM_NAME)
 # Optionally, if you want to append to an existing RPATH
