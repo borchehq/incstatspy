@@ -14,6 +14,7 @@ jobs:
   build_wheels:
     env: 
       CIBW_BUILD: "cp310-*"
+      CIBW_ENVIRONMENT: 'REPAIR_LIBRARY_PATH=$(pwd)/build/src/rstats'
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
