@@ -40,14 +40,14 @@ endif()
 target_link_libraries(rstatspy PRIVATE rstats Python::NumPy)
 install(TARGETS rstatspy DESTINATION .)
 
-if(WIN32)
-  add_custom_command(TARGET rstatspy POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/src/rstats/src/rstats/Release"
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_BINARY_DIR}/src/rstats/src/rstats/"
-    "${CMAKE_BINARY_DIR}/src/rstats/src/rstats/Release"
-  )
-endif()
+#if(WIN32)
+#  add_custom_command(TARGET rstatspy POST_BUILD
+#    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/src/rstats/src/rstats/Release"
+#    COMMAND ${CMAKE_COMMAND} -E copy_directory
+#    "${CMAKE_BINARY_DIR}/src/rstats/src/rstats/"
+#    "${CMAKE_BINARY_DIR}/src/rstats/src/rstats/Release"
+#  )
+#endif()
 
 init_git_submodule(${CMAKE_CURRENT_LIST_DIR}/src/rstats)
 add_subdirectory(src)
