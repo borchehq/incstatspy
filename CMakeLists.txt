@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.15)
 
 include(InitGitSubmodule.cmake)
 include(CMakePrintHelpers)
-
+if(WIN32)
+  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
 #Ensure the build uses the install RPATH
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
