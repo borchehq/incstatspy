@@ -35,6 +35,7 @@ target_include_directories(rstatspy PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/rstats
 if(BUILD_FOR_LINUX)
   set_target_properties(rstatspy PROPERTIES INSTALL_RPATH "\$ORIGIN/lib:${INSTALL_RPATH}")
   set_target_properties(rstatspy PROPERTIES INSTALL_RPATH "\$ORIGIN/lib64:${INSTALL_RPATH}")
+  set_target_properties(rstatspy PROPERTIES INSTALL_RPATH "\$ORIGIN:${INSTALL_RPATH}")
 endif()
 target_link_libraries(rstatspy PRIVATE rstats Python::NumPy)
 install(TARGETS rstatspy DESTINATION .)
