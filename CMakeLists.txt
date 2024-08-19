@@ -41,12 +41,12 @@ install(TARGETS rstatspy DESTINATION .)
 if(WIN32)
 add_custom_command(TARGET rstatspy POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${CMAKE_BINARY_DIR}/lib/rstats.lib"  # Source of the DLL
+    "${CMAKE_BINARY_DIR}/src/rstats/rstats.lib"  # Source of the DLL
     $<TARGET_FILE_DIR:rstatspy>)       # Destination directory (same as the executable)
 
 add_custom_command(TARGET rstatspy POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${CMAKE_BINARY_DIR}/lib/rstats.dll"  # Source of the DLL
+    "${CMAKE_BINARY_DIR}/src/rstats/rstats.dll"  # Source of the DLL
     $<TARGET_FILE_DIR:rstatspy>)       # Destination directory (same as the executable)
 endif()
 
