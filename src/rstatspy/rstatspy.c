@@ -35,42 +35,30 @@ typedef struct input_args {
 
 
 inline static bool increment(size_t *idx, size_t *n_dims, size_t dims) {
-  size_t i = 0;
-  idx[i]++;
-  while(idx[i] == n_dims[i]) {
-    idx[i++] = 0;
-    if(i >= dims) {
-      return true;
-    }
-    idx[i]++;
+  for (size_t i = 0; i < dims; ++i) {
+      if (++idx[i] < n_dims[i]) {
+          return false;
+      }
+      idx[i] = 0;
   }
-  return false;
+  return true;
 }
 
 inline static bool increment_ignore_axis(size_t *idx, size_t *n_dims, 
 size_t dims, int axis) {
-  size_t i = 0;
-  if(axis == 0) {
-    i++;
-    if(i >= dims) {
-      return true;
+  for (size_t i = 0; i < dims; i++) {
+    if (i == axis) {
+      continue;
     }
+
+    if (++idx[i] < n_dims[i]) {
+      return false;
+    }
+
+    idx[i] = 0;
   }
-  idx[i]++;
-  while(idx[i] == n_dims[i]) {
-      idx[i] = 0;
-      if(i + 1 != axis) {
-        i += 1;
-      }
-      else {
-        i += 2;
-      }
-      if(i >= dims) {
-        return true;
-      }
-      idx[i]++;
-  }
-  return false;
+
+  return true;
 }
 
 inline static double *slice_axis(PyArrayObject *obj, uint64_t *pos,

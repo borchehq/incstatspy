@@ -1,10 +1,11 @@
 import rstatspy
 import numpy as np
 import time
+import scipy
 
 try:
     print("0D array test")
-    mean, buffer = rstatspy.rstatspy_mean(5.0)
+    mean, buffer = rstatspy.mean(5.0)
     print(mean)
     print(buffer)
     mean, buffer = rstatspy.mean(0.0, axis=0, buffer=buffer)
@@ -399,7 +400,8 @@ try:
     print("Skewness")
     print(skewness)
     print(mean_cmp)
-    data = np.random.rand(5, 5, 500000)
+    data = np.random.rand(5, 5, 5000000)
+    weights = np.ones((5, 5, 5000000))
     print(data.shape)
     *_, moment_p, mean, buffer = (
         rstatspy.central_moment(data, 3, buffer=buffer, axis=2, weights=weights, standardize=True))
@@ -432,3 +434,18 @@ try:
     print(buffer)
 except Exception as e:
     print(f"Caught an exception: {e}")
+
+data = np.random.rand(1000000000, 1)
+start = time.time()
+mean, var, buffer = rstatspy.variance(data)
+end = time.time()
+print("Time passed rstatspy:", end - start, "sec")
+print(var)
+var = np.var(data)
+end = time.time()
+print("Time passed numpy:", end - start, "sec")
+print(var)
+var = scipy.ndimage.variance(data)
+end = time.time()
+print("Time passed scipy:", end - start, "sec")
+print(var)
