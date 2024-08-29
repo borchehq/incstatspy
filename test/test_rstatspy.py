@@ -3,449 +3,98 @@ import numpy as np
 import time
 import scipy
 
-try:
-    print("0D array test")
-    mean, buffer = rstatspy.mean(5.0)
-    print(mean)
-    print(buffer)
-    mean, buffer = rstatspy.mean(0.0, axis=0, buffer=buffer)
-    print(mean)
-    print(buffer)
-    mean, buffer = rstatspy.mean(100.0, axis=0, buffer=buffer)
-    print(mean)
-    print(buffer)
-except Exception as e:
-    print(f"Caught an exception: {e}")
 
-try:
-    print("1D array test")
-    data = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data)
-    print(mean)
-    print(buffer)
-    data = np.array([6., 7., 8., 9., 10.])
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, buffer=buffer)
-    print(mean)
-    print(buffer)
-except Exception as e:
-    print(f"Caught an exception: {e}")
+class TestRStatsPy:
+    test_iterations = 2000
+    p_max = 8
+    ndim_max = 5
 
-try:
-    print("2D array test")
-    data = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-    data = np.reshape(data, (5, 1))
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data)
-    print(mean)
-    print(buffer)
-    data = np.array([6., 7., 8., 9., 10.])
-    data = np.reshape(data, (5, 1))
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, buffer=buffer)
-    print(mean)
-    print(buffer)
-except Exception as e:
-    print(f"Caught an exception: {e}")
+    def __init__(self):
+        pass
 
-try:
-    print("2D array test")
-    data = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-    data = np.reshape(data, (5, 1))
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, axis=1)
-    print(mean)
-    print(buffer)
-    data = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-    data = np.reshape(data, (5, 1))
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, buffer=buffer, axis=1)
-    print(mean)
-    print(buffer)
-except Exception as e:
-    print(f"Caught an exception: {e}")
+    def test_mean(self):
+        for i in range(TestRStatsPy.test_iterations):
+            # 0 dimensional ndarrays
+            ndarray = np.array(np.random.rand())
+            mean, _ = rstatspy.mean(ndarray)
+            assert mean.ndim == 0
+            for ndim in range(1, TestRStatsPy.ndim_max + 1):
+                shape = tuple(np.random.randint(1, 25, size=ndim))
+                ndarray = np.random.rand(*shape)
+                mean, _ = rstatspy.mean(ndarray)
+                assert mean.ndim == ndim - 1
 
-try:
-    print("2D array test")
-    data = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-    data = np.reshape(data, (5, 2))
-    print(data)
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, axis=1)
-    print(mean)
-    print(buffer)
-    data = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-    data = np.reshape(data, (5, 2))
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, buffer=buffer, axis=1)
-    print(mean)
-    print(buffer)
-except Exception as e:
-    print(f"Caught an exception: {e}")
+    def test_variance(self):
+        for i in range(TestRStatsPy.test_iterations):
+            # 0 dimensional ndarrays
+            ndarray = np.array(np.random.rand())
+            mean, variance, _ = rstatspy.variance(ndarray)
+            assert mean.ndim == 0
+            assert variance.ndim == 0
+            for ndim in range(1, TestRStatsPy.ndim_max + 1):
+                shape = tuple(np.random.randint(1, 25, size=ndim))
+                ndarray = np.random.rand(*shape)
+                mean, variance, _ = rstatspy.variance(ndarray)
+                assert mean.ndim == ndim - 1
+                assert variance.ndim == ndim - 1
 
+    def test_skewness(self):
+        for i in range(TestRStatsPy.test_iterations):
+            # 0 dimensional ndarrays
+            ndarray = np.array(np.random.rand())
+            mean, variance, skewness, _ = rstatspy.skewness(ndarray)
+            assert mean.ndim == 0
+            assert variance.ndim == 0
+            assert skewness.ndim == 0
+            for ndim in range(1, TestRStatsPy.ndim_max + 1):
+                shape = tuple(np.random.randint(1, 25, size=ndim))
+                ndarray = np.random.rand(*shape)
+                mean, variance, skewness, _ = rstatspy.skewness(ndarray)
+                assert mean.ndim == ndim - 1
+                assert variance.ndim == ndim - 1
+                assert skewness.ndim == ndim - 1
 
-try:
-    print("2D array test")
-    data = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-    data = np.reshape(data, (5, 2))
-    print(data)
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, axis=0)
-    print(mean)
-    print(buffer)
-    data = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-    data = np.reshape(data, (5, 2))
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, buffer=buffer, axis=0)
-    print(mean)
-    print(buffer)
-except Exception as e:
-    print(f"Caught an exception: {e}")
+    def test_kurtosis(self):
+        for i in range(TestRStatsPy.test_iterations):
+            # 0 dimensional ndarrays
+            ndarray = np.array(np.random.rand())
+            mean, variance, skewness, kurtosis, _ = rstatspy.kurtosis(ndarray)
+            assert mean.ndim == 0
+            assert variance.ndim == 0
+            assert skewness.ndim == 0
+            assert kurtosis.ndim == 0
+            for ndim in range(1, TestRStatsPy.ndim_max + 1):
+                shape = tuple(np.random.randint(1, 25, size=ndim))
+                ndarray = np.random.rand(*shape)
+                mean, variance, skewness,kurtosis, _ = rstatspy.kurtosis(ndarray)
+                assert mean.ndim == ndim - 1
+                assert variance.ndim == ndim - 1
+                assert skewness.ndim == ndim - 1
+                assert kurtosis.ndim == ndim - 1
 
-try:
-    print("3D array test")
-    data = np.random.rand(5, 5, 500)
-    #print(data)
-    #print(data.shape)
-    mean, buffer = rstatspy.mean(data, axis=2)
-    mean_cmp = np.mean(data, axis=2)
-    print("MEAN")
-    print(mean)
-    print("MEAN CMP")
-    print(mean_cmp)
-    data = np.random.rand(5, 5, 500)
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, buffer=buffer, axis=2)
-    #print(mean)
-except Exception as e:
-    print(f"Caught an exception: {e}")
+    def test_central_moment(self):
+        for i in range(TestRStatsPy.test_iterations):
+            # 0 dimensional ndarrays
+            ndarray = np.array(np.random.rand())
+            for p in range(0, TestRStatsPy.p_max + 1):
+                tup = rstatspy.central_moment(ndarray, p)
+                for element in tup[:-1]:
+                    assert element.ndim == 0
+            for ndim in range(1, TestRStatsPy.ndim_max + 1):
+                shape = tuple(np.random.randint(5, 10, size=ndim))
+                ndarray = np.random.rand(*shape)
+                for p in range(0, TestRStatsPy.p_max + 1):
+                    tup = rstatspy.central_moment(ndarray, p)
+                    for element in tup[:-1]:
+                        assert element.ndim == ndim - 1
 
+def main():
+    test_rstatspy = TestRStatsPy()
+    test_rstatspy.test_mean()
+    test_rstatspy.test_variance()
+    test_rstatspy.test_skewness()
+    test_rstatspy.test_kurtosis()
+    test_rstatspy.test_central_moment()
 
-try:
-    print("0D array test")
-    mean, buffer = rstatspy.mean(5.0, 5.0)
-    print(mean)
-    print(buffer)
-    mean, buffer = rstatspy.mean(0.0, 1.0, axis=0, buffer=buffer)
-    print(mean)
-    print(buffer)
-    mean, buffer = rstatspy.mean(100.0, 3.0, axis=0, buffer=buffer)
-    print(mean)
-    print(buffer)
-except Exception as e:
-    print(f"Caught an exception: {e}")
-
-
-try:
-    print("1D array test")
-    data = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-    weights = np.array([1.0, 1.0, 1.0, 1.0, 1.0])
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, weights=weights)
-    print(mean)
-    print(buffer)
-    data = np.array([6., 7., 8., 9., 10.])
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, buffer=buffer, weights=weights)
-    print(mean)
-    print(buffer)
-except Exception as e:
-    print(f"Caught an exception: {e}")
-
-try:
-    print("2D array test")
-    data = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-    weights = np.array([10000.0, 1.0, 1.0, 1.0, 1.0])
-    data = np.reshape(data, (5, 1))
-    weights = np.reshape(weights, (5, 1))
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, weights)
-    print(mean)
-    print(buffer)
-    weights = np.array([1.0, 1.0, 1.0, 1.0, 1.0])
-    weights = np.reshape(weights, (5, 1))
-    data = np.array([6., 7., 8., 9., 10.])
-    data = np.reshape(data, (5, 1))
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, buffer=buffer, weights=weights)
-    print(mean)
-    print(buffer)
-except Exception as e:
-    print(f"Caught an exception: {e}")
-
-try:
-    print("2D array test")
-    data = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-    data = np.reshape(data, (5, 1))
-    weights = np.array([1.0, 1.0, 1.0, 1.0, 1.0])
-    weights = np.reshape(weights, (5, 1))
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, axis=1, weights=weights)
-    print(mean)
-    print(buffer)
-    data = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-    data = np.reshape(data, (5, 1))
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, buffer=buffer, axis=1, weights=weights)
-    print(mean)
-    print(buffer)
-except Exception as e:
-    print(f"Caught an exception: {e}")
-
-try:
-    print("2D array test")
-    data = np.array([9.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-    data = np.reshape(data, (5, 2))
-    weights = np.array([10000.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-    weights = np.reshape(weights, (5, 2))
-    print(data)
-    print(weights)
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, axis=1, weights=weights)
-    print(mean)
-    print(buffer)
-    data = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-    data = np.reshape(data, (5, 2))
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, buffer=buffer, axis=1, weights=weights)
-    print(mean)
-    print(buffer)
-except Exception as e:
-    print(f"Caught an exception: {e}")
-
-try:
-    print("2D array test")
-    data = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-    data = np.reshape(data, (5, 2))
-    weights = np.array([10000.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-    weights = np.reshape(weights, (5, 2))
-    print(data)
-    print(data.shape)
-
-    mean, buffer = rstatspy.mean(data, axis=0, weights=weights)
-    mean_cmp = np.mean(data, axis=0)
-    print("rstatspy")
-    print(mean)
-    print("numpy")
-    print(mean_cmp)
-    print(buffer)
-    data = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-    data = np.reshape(data, (5, 2))
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, buffer=buffer, axis=0, weights=weights)
-    print(mean)
-    print(buffer)
-except Exception as e:
-    print(f"Caught an exception: {e}")
-
-try:
-    print("3D array test")
-    data = np.random.rand(3, 3, 3)
-    weights = np.ones((3, 3, 3))
-    #print(data)
-    #print(data.shape)
-    mean, buffer = rstatspy.mean(data, axis=2, weights=weights)
-    mean_cmp = np.mean(data, axis=2)
-    print(mean)
-    print(mean_cmp)
-    data = np.random.rand(3, 3, 3)
-    print(data.shape)
-    mean, buffer = rstatspy.mean(data, buffer=buffer, axis=2, weights=weights)
-    #print(mean)
-except Exception as e:
-    print(f"Caught an exception: {e}")
-
-
-try:
-    print("3D array test")
-    data = np.random.rand(5, 5, 500)
-    weights = np.ones((5, 5, 500))
-    #print(data)
-    #print(data.shape)
-    mean, variance, buffer = rstatspy.variance(data, axis=2, weights=weights)
-    mean_cmp = np.mean(data, axis=2)
-    print("MEAN 2")
-    print(mean)
-    print("VARIANCE 2")
-    print(variance)
-    print(mean_cmp)
-    data = np.random.rand(5, 5, 500)
-    print(data.shape)
-    mean, variance, buffer = rstatspy.variance(data, buffer=buffer, axis=2, weights=weights)
-    #print(mean)
-except Exception as e:
-    print(f"Caught an exception: {e}")
-
-
-try:
-    print("0D array test")
-    mean, variance, buffer = rstatspy.variance(5.0)
-    print(mean)
-    print(variance)
-    print(buffer)
-    mean, variance, buffer = rstatspy.variance(0.0, axis=0, buffer=buffer)
-    print(mean)
-    print(variance)
-    print(buffer)
-    mean, variance, buffer = rstatspy.variance(100.0, axis=0, buffer=buffer)
-    print(mean)
-    print(variance)
-    print(buffer)
-except Exception as e:
-    print(f"Caught an exception: {e}")
-
-
-try:
-    print("3D array test")
-    data = np.random.rand(5, 5, 500)
-    weights = np.ones((5, 5, 500))
-    #print(data)
-    #print(data.shape)
-    mean, variance, skewness, buffer = rstatspy.skewness(data, axis=2, weights=weights)
-    mean_cmp = np.mean(data, axis=2)
-    print("MEAN 3")
-    print(mean)
-    print("VARIANCE 3")
-    print(variance)
-    print("SKEWNESS 3")
-    print(skewness)
-    print(mean_cmp)
-    data = np.random.rand(5, 5, 500)
-    print(data.shape)
-    mean, variance,skewness, buffer = rstatspy.skewness(data, buffer=buffer, axis=2, weights=weights)
-    #print(mean)
-except Exception as e:
-    print(f"Caught an exception: {e}")
-
-try:
-    print("0D array test")
-    mean, variance, skewness, buffer = rstatspy.skewness(5.0)
-    print(mean)
-    print(variance)
-    print(buffer)
-    mean, variance,skewness, buffer = rstatspy.skewness(0.0, axis=0, buffer=buffer)
-    print(mean)
-    print(variance)
-    print(buffer)
-    mean, variance, skewness, buffer = rstatspy.skewness(100.0, axis=0, buffer=buffer)
-    mean, variance, skewness, buffer = rstatspy.skewness(5.0, axis=0, buffer=buffer)
-    mean, variance, skewness, buffer = rstatspy.skewness(254500.0, axis=0, buffer=buffer)
-    mean, variance, skewness, buffer = rstatspy.skewness(25450.0, axis=0, buffer=buffer)
-    mean, variance, skewness, buffer = rstatspy.skewness(25450.0, axis=0, buffer=buffer)
-    print(mean)
-    print(variance)
-    print(skewness)
-    print(buffer)
-except Exception as e:
-    print(f"Caught an exception: {e}")
-
-
-try:
-    print("3D array test")
-    data = np.random.rand(5, 5, 50000)
-    weights = np.ones((5, 5, 50000))
-    #print(data)
-    #print(data.shape)
-    mean, variance, skewness, kurtosis, buffer = (
-        rstatspy.kurtosis(data, axis=2, weights=weights))
-    mean_cmp = np.mean(data, axis=2)
-    print("Mean")
-    print(mean)
-    print("Variance")
-    print(variance)
-    print("Skewness")
-    print(skewness)
-    print("Kurtosis")
-    print(kurtosis)
-    print(mean_cmp)
-    data = np.random.rand(5, 5, 50000)
-    print(data.shape)
-    mean, variance,skewness, kurtosis, buffer = (
-        rstatspy.kurtosis(data, buffer=buffer, axis=2, weights=weights))
-    print("Kurtosis")
-    print(kurtosis)
-    #print(mean)
-except Exception as e:
-    print(f"Caught an exception: {e}")
-
-try:
-    print("0D array test")
-    mean, variance, skewness, kurtosis, buffer = rstatspy.kurtosis(5.0)
-    mean, variance,skewness, kurtosis, buffer = rstatspy.kurtosis(0.0, axis=0, buffer=buffer)
-    mean, variance, skewness, kurtosis, buffer = rstatspy.kurtosis(100.0, axis=0, buffer=buffer)
-    mean, variance, skewness, kurtosis, buffer = rstatspy.kurtosis(5.0, axis=0, buffer=buffer)
-    mean, variance, skewness, kurtosis, buffer = rstatspy.kurtosis(254500.0, axis=0, buffer=buffer)
-    mean, variance, skewness, kurtosis, buffer = rstatspy.kurtosis(25450.0, axis=0, buffer=buffer)
-    mean, variance, skewness, kurtosis, buffer = rstatspy.kurtosis(25450.0, axis=0, buffer=buffer)
-    print(mean)
-    print(variance)
-    print(skewness)
-    print(kurtosis)
-    print(buffer)
-except Exception as e:
-    print(f"Caught an exception: {e}")
-try:
-    print("3D array test")
-    data = np.random.rand(5, 5, 500000)
-    weights = np.ones((5, 5, 500000))
-    #print(data)
-    #print(data.shape)
-    *_, moment_p, mean, buffer = (
-        rstatspy.central_moment(data, 3, axis=2, weights=weights, standardize=True))
-    *_, skewness, buffer_2 = rstatspy.skewness(data, axis=2, weights=weights)
-    mean_cmp = np.var(data, axis=2)
-    print("P-th Moment")
-    print(moment_p)
-    print("Skewness")
-    print(skewness)
-    print(mean_cmp)
-    data = np.random.rand(5, 5, 5000000)
-    weights = np.ones((5, 5, 5000000))
-    print(data.shape)
-    *_, moment_p, mean, buffer = (
-        rstatspy.central_moment(data, 3, buffer=buffer, axis=2, weights=weights, standardize=True))
-    print("P-th Moment")
-    print(moment_p)
-    #print(mean)
-except Exception as e:
-    print(f"Caught an exception: {e}")
-
-
-try:
-    print("0D array test")
-    *_, moment_p, mean, buffer = (
-        rstatspy.central_moment(5.0, 7, axis=0, weights=100000.0, standardize=False))
-    *_, moment_p, mean, buffer = (
-        rstatspy.central_moment(5.0, 7, axis=0, weights=1.0, buffer=buffer, standardize=False))
-    *_, moment_p, mean, buffer = (
-        rstatspy.central_moment(5.0, 7, axis=0, weights=1.0, buffer=buffer, standardize=False))
-    *_, moment_p, mean, buffer = (
-        rstatspy.central_moment(5.46, 7, axis=0, weights=1.0, buffer=buffer, standardize=False))
-    *_, moment_p, mean, buffer = (
-        rstatspy.central_moment(5.67868, 7, axis=0, weights=1.0, buffer=buffer, standardize=False))
-    *_, moment_p, mean, buffer = (
-        rstatspy.central_moment(5.234234, 7, axis=0, weights=1.0, buffer=buffer, standardize=False))
-    *_, moment_p, mean, buffer = (
-        rstatspy.central_moment(5.6767857, 7, axis=0, weights=1.0, buffer=buffer, standardize=False))
-
-    print(mean)
-    print(moment_p)
-    print(buffer)
-except Exception as e:
-    print(f"Caught an exception: {e}")
-
-data = np.random.rand(1000000000, 1)
-start = time.time()
-mean, var, buffer = rstatspy.variance(data)
-end = time.time()
-print("Time passed rstatspy:", end - start, "sec")
-print(var)
-var = np.var(data)
-end = time.time()
-print("Time passed numpy:", end - start, "sec")
-print(var)
-var = scipy.ndimage.variance(data)
-end = time.time()
-print("Time passed scipy:", end - start, "sec")
-print(var)
+if __name__ == "__main__":
+    main()
