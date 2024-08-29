@@ -92,9 +92,9 @@ static int is_python_float(PyObject *obj) {
 
 static int parse_input(PyObject *args, PyObject* kwargs, 
 input_args_container *input_args) {
-  PyObject *object_raw_data = Py_None;
-  PyObject *object_raw_weights = Py_None;
-  PyObject *object_raw_buffer = Py_None;
+  PyObject *object_raw_data = NULL;
+  PyObject *object_raw_weights = NULL;
+  PyObject *object_raw_buffer = NULL;
 
   if(!input_args->parse_p) {
     if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OiO", input_args->kwlist, 
@@ -126,7 +126,7 @@ input_args_container *input_args) {
     }
   }
 
-  if(object_raw_weights != Py_None) {
+  if(object_raw_weights != NULL) {
     if(!PyArray_Check(object_raw_weights)) {
       if(!PyArray_IsAnyScalar(object_raw_weights)) {
         PyErr_SetString(PyExc_TypeError, 
@@ -136,17 +136,22 @@ input_args_container *input_args) {
     }
   }
   
-  if(object_raw_buffer != Py_None) {
+  if(object_raw_buffer != NULL) {
     if(!PyArray_Check(object_raw_buffer)) {
       PyErr_SetString(PyExc_TypeError, "Argument 3 is not a ndarray");
       return -1;
     }
   }
 
-  if(!PyArray_IsAnyScalar(object_raw_data) && 
+  if(!PyArray_CheckScalar(object_raw_data) && 
   !PyArray_IsPythonNumber(object_raw_data)) {
     input_args->data = (PyArrayObject *)
     PyArray_FromAny(object_raw_data, NULL, 0, 0, NPY_ARRAY_ALIGNED, NULL);
+    if(input_args->data == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+        "Couldn't convert ndarray");
+    return -1;
+    }
     if(!is_float64((PyObject *)input_args->data)) {
       PyErr_SetString(PyExc_TypeError, "Argument 1 is not of type NPY_FLOAT64");
       return -1;
@@ -161,6 +166,11 @@ input_args_container *input_args) {
     else {
       input_args->data = (PyArrayObject *)
       PyArray_FromAny(object_raw_data, NULL, 0, 0, NPY_ARRAY_ALIGNED, NULL);
+      if(input_args->data == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+        "Couldn't convert ndarray");
+        return -1;
+      }
       if(!is_float64((PyObject *) input_args->data)) {
         PyErr_SetString(PyExc_TypeError, 
         "Argument 1 is neither of type NPY_FLOAT64 nor a python float");
@@ -170,11 +180,16 @@ input_args_container *input_args) {
     }
   }
 
-  if(object_raw_weights != Py_None) {
+  if(object_raw_weights != NULL) {
     if(!PyArray_IsAnyScalar(object_raw_weights) && 
     !PyArray_IsPythonNumber(object_raw_weights)) {
       input_args->weights = (PyArrayObject *)
       PyArray_FromAny(object_raw_weights, NULL, 0, 0, NPY_ARRAY_ALIGNED, NULL);
+      if(input_args->weights == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+        "Couldn't convert ndarray");
+        return -1;
+      }
       if(!is_float64((PyObject *)input_args->weights)) {
         PyErr_SetString(PyExc_TypeError, 
         "Argument 2 is not of type NPY_FLOAT64");
@@ -199,6 +214,11 @@ input_args_container *input_args) {
       else {
         input_args->weights = (PyArrayObject *)
         PyArray_FromAny(object_raw_weights, NULL, 0, 0, NPY_ARRAY_ALIGNED, NULL);
+        if(input_args->weights == NULL) {
+            PyErr_SetString(PyExc_TypeError,
+            "Couldn't convert ndarray");
+            return -1;
+        }
         if(!is_float64((PyObject *) input_args->weights)) {
           PyErr_SetString(PyExc_TypeError, 
           "Argument 2 is neither of type NPY_FLOAT64 nor a python float");
@@ -209,7 +229,7 @@ input_args_container *input_args) {
     }
   }
 
-  if(object_raw_weights != Py_None) {
+  if(object_raw_weights != NULL) {
     if(input_args->n_dim_data != input_args->n_dim_weights) {
       PyErr_SetString(PyExc_TypeError, 
       "Argument 1 and argument 2 don't have the same number of dimensions");
@@ -217,13 +237,13 @@ input_args_container *input_args) {
     }
   }
 
-  if(object_raw_buffer != Py_None) {
+  if(object_raw_buffer != NULL) {
     input_args->buffer = (PyArrayObject *)
     PyArray_FromAny(object_raw_buffer, NULL, 0, 0, 
     NPY_ARRAY_ALIGNED | NPY_ARRAY_WRITEABLE, NULL);     
   }
 
-  if(object_raw_buffer != Py_None) {
+  if(object_raw_buffer != NULL) {
     input_args->n_dim_buffer = PyArray_NDIM(input_args->buffer);
   }
 
@@ -236,7 +256,7 @@ input_args_container *input_args) {
   if(input_args->input_is_scalar) {
     input_args->axis = 0;
   }
-  if(object_raw_buffer != Py_None) {
+  if(object_raw_buffer != NULL) {
     if(input_args->n_dim_buffer != 1) {
       PyErr_SetString(PyExc_TypeError, 
       "Fourth argument is expected to be 1-dimensional");
@@ -255,7 +275,7 @@ input_args_container *input_args) {
     }
   }
   
-  if(object_raw_weights != Py_None) {
+  if(object_raw_weights != NULL) {
     if(!input_args->input_is_scalar) {
       input_args->dimensions_weights = PyArray_DIMS(input_args->weights);
     }
@@ -268,7 +288,7 @@ input_args_container *input_args) {
     }
   }
   
-  if(input_args->buffer != (PyArrayObject *)Py_None) {
+  if(input_args->buffer != NULL) {
     input_args->dimensions_buffer = PyArray_DIMS(input_args->buffer);
   }
 
@@ -279,7 +299,7 @@ input_args_container *input_args) {
     }
   }
 
-  if(input_args->buffer != (PyArrayObject *)Py_None) {
+  if(input_args->buffer != (PyArrayObject *)NULL) {
     if(input_args->dimensions_buffer[0] != input_args->length_buffer) {
       PyErr_SetString(PyExc_TypeError, 
       "Fourth argument has wrong length.");
@@ -295,7 +315,7 @@ input_args_container *input_args) {
      return -1;
   }
   
-  if(input_args->buffer != (PyArrayObject *)Py_None) {
+  if(input_args->buffer != NULL) {
     for(int i = 0; i < input_args->length_buffer; i++) {
       input_args->internal_buffer[i] = 
       *(double *) PyArray_GETPTR1(input_args->buffer, i);
@@ -305,14 +325,14 @@ input_args_container *input_args) {
   return 0;
 }
 
-static PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
+PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
 {
   static char *kwlist[] = {"input", "weights", "axis", "buffer", NULL};
   const int initial_buffer_length = 2;
   input_args_container input_args;
-  input_args.data = (PyArrayObject *)Py_None;
-  input_args.buffer = (PyArrayObject *)Py_None;
-  input_args.weights = (PyArrayObject *)Py_None;
+  input_args.data = NULL;
+  input_args.buffer = NULL;
+  input_args.weights = NULL;
   input_args.scalar_weight = 1.0;
   input_args.scalar_data = 0.0;
   input_args.internal_buffer = NULL;
@@ -330,7 +350,7 @@ static PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
   input_args.p = -1;
   bool done = false;
   double *buffer_ptr = NULL;
-  PyArrayObject *array_mean = (PyArrayObject *)Py_None;
+  PyArrayObject *array_mean = NULL;
   npy_intp *output_dims = NULL;
   
    
@@ -355,7 +375,7 @@ static PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
       done = false;
       while(!done) {
         double weight = 1.0;
-        if((PyObject *)input_args.weights != Py_None) {
+        if((PyObject *)input_args.weights != NULL) {
           weight = *(double *)PyArray_GetPtr(input_args.weights, pos);
         }
         double val = *slice_axis(input_args.data, pos, 
@@ -383,7 +403,7 @@ static PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
     }
     array_mean = (PyArrayObject *) PyArray_SimpleNew
     ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
-    if((PyObject *)array_mean == Py_None) {
+    if((PyObject *)array_mean == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
       return NULL;
@@ -410,7 +430,7 @@ static PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
   else {
     array_mean = (PyArrayObject *) PyArray_SimpleNew
     (0, NULL, NPY_DOUBLE);
-    if((PyObject *)array_mean == Py_None) {
+    if((PyObject *)array_mean == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
       return NULL;
@@ -423,10 +443,10 @@ static PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
   }
 
   // Create external buffer if it doesn't exist yet.
-  if((PyObject *)input_args.buffer == Py_None) {
+  if((PyObject *)input_args.buffer == NULL) {
    input_args.buffer = (PyArrayObject *) 
    PyArray_SimpleNew(1, &input_args.length_buffer, NPY_DOUBLE);
-    if((PyObject *)array_mean == Py_None) {
+    if((PyObject *)array_mean == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for external buffer.");
       return NULL;
@@ -441,10 +461,8 @@ static PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
   free(pos);
   free(input_args.internal_buffer);
   free(output_dims);
-  Py_DECREF(input_args.data);
-  Py_DECREF(input_args.weights);
-
-    
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);
   PyObject* tuple = PyTuple_New(2);
 
   if(!tuple) {
@@ -456,14 +474,14 @@ static PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
   return tuple;
 }
 
-static PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
+PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
 {
   static char *kwlist[] = {"input", "weights", "axis", "buffer", NULL};
   const int initial_buffer_length = 3;
   input_args_container input_args;
-  input_args.data = (PyArrayObject *)Py_None;
-  input_args.buffer = (PyArrayObject *)Py_None;
-  input_args.weights = (PyArrayObject *)Py_None;
+  input_args.data = (PyArrayObject *)NULL;
+  input_args.buffer = (PyArrayObject *)NULL;
+  input_args.weights = (PyArrayObject *)NULL;
   input_args.scalar_weight = 1.0;
   input_args.scalar_data = 0.0;
   input_args.internal_buffer = NULL;
@@ -481,8 +499,8 @@ static PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
   input_args.p = -1;
   bool done = false;
   double *buffer_ptr = NULL;
-  PyArrayObject *array_mean = (PyArrayObject *) Py_None;
-  PyArrayObject *array_variance = (PyArrayObject *) Py_None;
+  PyArrayObject *array_mean = (PyArrayObject *) NULL;
+  PyArrayObject *array_variance = (PyArrayObject *) NULL;
   npy_intp *output_dims = NULL;
   
   if(parse_input(args, kwargs, &input_args) == -1) {
@@ -505,7 +523,7 @@ static PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
       done = false;
       while(!done) {
         double weight = 1.0;
-        if((PyObject *)input_args.weights != Py_None) {
+        if((PyObject *)input_args.weights != NULL) {
           weight = *(double *)PyArray_GetPtr(input_args.weights, pos);
         }
         double val = *slice_axis(input_args.data, pos, 
@@ -535,7 +553,7 @@ static PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
     ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
     array_variance = (PyArrayObject *) PyArray_SimpleNew
     ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
-    if((PyObject *)array_mean == Py_None || (PyObject *)array_variance == Py_None) {
+    if((PyObject *)array_mean == NULL || (PyObject *)array_variance == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
       return NULL;
@@ -566,7 +584,7 @@ static PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
     (0, NULL, NPY_DOUBLE);
     array_variance = (PyArrayObject *) PyArray_SimpleNew
     (0, NULL, NPY_DOUBLE);
-    if((PyObject *)array_mean == Py_None || (PyObject *)array_variance == Py_None) {
+    if((PyObject *)array_mean == NULL || (PyObject *)array_variance == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
       return NULL;
@@ -581,10 +599,10 @@ static PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
   }
 
   // Create external buffer if it doesn't exist yet.
-  if((PyObject *)input_args.buffer == Py_None) {
+  if((PyObject *)input_args.buffer == NULL) {
     input_args.buffer = (PyArrayObject *) PyArray_SimpleNew(1, 
     &input_args.length_buffer, NPY_DOUBLE);
-    if((PyObject *)input_args.buffer == Py_None) {
+    if((PyObject *)input_args.buffer == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for external buffer.");
       return NULL;
@@ -599,8 +617,8 @@ static PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
   free(pos);
   free(input_args.internal_buffer);
   free(output_dims);
-  Py_DECREF(input_args.data);
-  Py_DECREF(input_args.weights);
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);
 
   
 
@@ -616,14 +634,14 @@ static PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
   return tuple;
 }
 
-static PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
+PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
 {
   static char *kwlist[] = {"input", "weights", "axis", "buffer", NULL};
   const int initial_buffer_length = 4;
   input_args_container input_args;
-  input_args.data = (PyArrayObject *)Py_None;
-  input_args.buffer = (PyArrayObject *)Py_None;
-  input_args.weights = (PyArrayObject *)Py_None;
+  input_args.data = (PyArrayObject *)NULL;
+  input_args.buffer = (PyArrayObject *)NULL;
+  input_args.weights = (PyArrayObject *)NULL;
   input_args.scalar_weight = 1.0;
   input_args.scalar_data = 0.0;
   input_args.internal_buffer = NULL;
@@ -641,9 +659,9 @@ static PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
   input_args.p = -1;
   bool done = false;
   double *buffer_ptr = NULL;
-  PyArrayObject *array_mean = (PyArrayObject *) Py_None;
-  PyArrayObject *array_variance = (PyArrayObject *) Py_None;
-  PyArrayObject *array_skewness = (PyArrayObject *) Py_None;
+  PyArrayObject *array_mean = (PyArrayObject *) NULL;
+  PyArrayObject *array_variance = (PyArrayObject *) NULL;
+  PyArrayObject *array_skewness = (PyArrayObject *) NULL;
   npy_intp *output_dims = NULL;
   
   if(parse_input(args, kwargs, &input_args) == -1) {
@@ -666,7 +684,7 @@ static PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
       done = false;
       while(!done) {
         double weight = 1.0;
-        if((PyObject *)input_args.weights != Py_None) {
+        if((PyObject *)input_args.weights != NULL) {
           weight = *(double *)PyArray_GetPtr(input_args.weights, pos);
         }
         double val = *slice_axis(input_args.data, pos, 
@@ -698,8 +716,8 @@ static PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
     ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
     array_skewness = (PyArrayObject *) PyArray_SimpleNew
     ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
-    if((PyObject *)array_mean == Py_None || (PyObject *)array_variance ==
-    Py_None || (PyObject *)array_skewness == Py_None) {
+    if((PyObject *)array_mean == NULL || (PyObject *)array_variance ==
+    NULL || (PyObject *)array_skewness == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
       return NULL;
@@ -734,8 +752,8 @@ static PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
     (0, NULL, NPY_DOUBLE);
     array_skewness = (PyArrayObject *) PyArray_SimpleNew
     (0, NULL, NPY_DOUBLE);
-    if((PyObject *)array_mean == Py_None || (PyObject *)array_variance == 
-    Py_None || (PyObject *)array_skewness == Py_None) {
+    if((PyObject *)array_mean == NULL || (PyObject *)array_variance == 
+    NULL || (PyObject *)array_skewness == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
       return NULL;
@@ -752,10 +770,10 @@ static PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
   }
 
   // Create external buffer if it doesn't exist yet.
-  if((PyObject *)input_args.buffer == Py_None) {
+  if((PyObject *)input_args.buffer == NULL) {
     input_args.buffer = (PyArrayObject *) PyArray_SimpleNew(1, 
     &input_args.length_buffer, NPY_DOUBLE);
-    if((PyObject *)input_args.buffer == Py_None) {
+    if((PyObject *)input_args.buffer == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for external buffer.");
       return NULL;
@@ -770,8 +788,8 @@ static PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
   free(pos);
   free(input_args.internal_buffer);
   free(output_dims);
-  Py_DECREF(input_args.data);
-  Py_DECREF(input_args.weights);
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);
 
   
 
@@ -788,14 +806,14 @@ static PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
   return tuple;
 }
 
-static PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
+PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
 {
   static char *kwlist[] = {"input", "weights", "axis", "buffer", NULL};
   const int initial_buffer_length = 5;
   input_args_container input_args;
-  input_args.data = (PyArrayObject *)Py_None;
-  input_args.buffer = (PyArrayObject *)Py_None;
-  input_args.weights = (PyArrayObject *)Py_None;
+  input_args.data = (PyArrayObject *)NULL;
+  input_args.buffer = (PyArrayObject *)NULL;
+  input_args.weights = (PyArrayObject *)NULL;
   input_args.scalar_weight = 1.0;
   input_args.scalar_data = 0.0;
   input_args.internal_buffer = NULL;
@@ -813,10 +831,10 @@ static PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
   input_args.p = -1;
   bool done = false;
   double *buffer_ptr = NULL;
-  PyArrayObject *array_mean = (PyArrayObject *) Py_None;
-  PyArrayObject *array_variance = (PyArrayObject *) Py_None;
-  PyArrayObject *array_skewness = (PyArrayObject *) Py_None;
-  PyArrayObject *array_kurtosis = (PyArrayObject *) Py_None;
+  PyArrayObject *array_mean = (PyArrayObject *) NULL;
+  PyArrayObject *array_variance = (PyArrayObject *) NULL;
+  PyArrayObject *array_skewness = (PyArrayObject *) NULL;
+  PyArrayObject *array_kurtosis = (PyArrayObject *) NULL;
   npy_intp *output_dims = NULL;
   
   if(parse_input(args, kwargs, &input_args) == -1) {
@@ -839,7 +857,7 @@ static PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
       done = false;
       while(!done) {
         double weight = 1.0;
-        if((PyObject *)input_args.weights != Py_None) {
+        if((PyObject *)input_args.weights != NULL) {
           weight = *(double *)PyArray_GetPtr(input_args.weights, pos);
         }
         double val = *slice_axis(input_args.data, pos, 
@@ -873,9 +891,9 @@ static PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
     ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
     array_kurtosis = (PyArrayObject *) PyArray_SimpleNew
     ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
-    if((PyObject *)array_mean == Py_None || (PyObject *)array_variance ==
-    Py_None || (PyObject *)array_skewness == Py_None || 
-    (PyObject *)array_kurtosis == Py_None) {
+    if((PyObject *)array_mean == NULL || (PyObject *)array_variance ==
+    NULL || (PyObject *)array_skewness == NULL || 
+    (PyObject *)array_kurtosis == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
       return NULL;
@@ -914,8 +932,8 @@ static PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
     (0, NULL, NPY_DOUBLE);
     array_kurtosis = (PyArrayObject *) PyArray_SimpleNew
     (0, NULL, NPY_DOUBLE);
-    if((PyObject *)array_mean == Py_None || (PyObject *)array_variance == 
-    Py_None || (PyObject *)array_skewness == Py_None || (PyObject *)array_kurtosis == Py_None) {
+    if((PyObject *)array_mean == NULL || (PyObject *)array_variance == 
+    NULL || (PyObject *)array_skewness == NULL || (PyObject *)array_kurtosis == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
       return NULL;
@@ -934,10 +952,10 @@ static PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
   }
 
   // Create external buffer if it doesn't exist yet.
-  if((PyObject *)input_args.buffer == Py_None) {
+  if((PyObject *)input_args.buffer == NULL) {
     input_args.buffer = (PyArrayObject *) PyArray_SimpleNew(1, 
     &input_args.length_buffer, NPY_DOUBLE);
-    if((PyObject *)input_args.buffer == Py_None) {
+    if((PyObject *)input_args.buffer == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for external buffer.");
       return NULL;
@@ -952,8 +970,8 @@ static PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
   free(pos);
   free(input_args.internal_buffer);
   free(output_dims);
-  Py_DECREF(input_args.data);
-  Py_DECREF(input_args.weights);
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);
 
   
 
@@ -971,14 +989,14 @@ static PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
   return tuple;
 }
 
-static PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
+PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
 {
   static char *kwlist[] = 
   {"input", "p", "weights", "axis", "buffer", "standardize", NULL};
   input_args_container input_args;
-  input_args.data = (PyArrayObject *)Py_None;
-  input_args.buffer = (PyArrayObject *)Py_None;
-  input_args.weights = (PyArrayObject *)Py_None;
+  input_args.data = (PyArrayObject *)NULL;
+  input_args.buffer = (PyArrayObject *)NULL;
+  input_args.weights = (PyArrayObject *)NULL;
   input_args.scalar_weight = 1.0;
   input_args.scalar_data = 0.0;
   input_args.internal_buffer = NULL;
@@ -996,7 +1014,7 @@ static PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs
   input_args.standardize = false;
   bool done = false;
   double *buffer_ptr = NULL;
-  PyArrayObject **central_moment = (PyArrayObject **) Py_None;
+  PyArrayObject **central_moment = (PyArrayObject **) NULL;
   npy_intp *output_dims = NULL;
   
   if(parse_input(args, kwargs, &input_args) == -1) {
@@ -1025,7 +1043,7 @@ static PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs
       done = false;
       while(!done) {
         double weight = 1.0;
-        if((PyObject *)input_args.weights != Py_None) {
+        if((PyObject *)input_args.weights != NULL) {
           weight = *(double *)PyArray_GetPtr(input_args.weights, pos);
         }
         double val = *slice_axis(input_args.data, pos, 
@@ -1055,7 +1073,7 @@ static PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs
     for(int k = 0; k < input_args.p + 2; k++) {
       central_moment[k] = (PyArrayObject *) PyArray_SimpleNew
       ((input_args.n_dim_data - 1), output_dims, NPY_DOUBLE);
-      if((PyObject *) central_moment[k] == Py_None) {
+      if((PyObject *) central_moment[k] == NULL) {
         PyErr_SetString(PyExc_TypeError, 
         "Couldn't allocate memory for mean array.");
         return NULL;
@@ -1092,7 +1110,7 @@ static PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs
     for(int k = 0; k < input_args.p + 2; k++) {
       central_moment[k] = (PyArrayObject *) PyArray_SimpleNew
       (0, NULL, NPY_DOUBLE);
-      if((PyObject *) central_moment[k] == Py_None) {
+      if((PyObject *) central_moment[k] == NULL) {
         PyErr_SetString(PyExc_TypeError, 
         "Couldn't allocate memory for mean array.");
         return NULL;
@@ -1116,10 +1134,10 @@ static PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs
   }
   
   // Create external buffer if it doesn't exist yet.
-  if((PyObject *)input_args.buffer == Py_None) {
+  if((PyObject *)input_args.buffer == NULL) {
     input_args.buffer = (PyArrayObject *) PyArray_SimpleNew(1, 
     &input_args.length_buffer, NPY_DOUBLE);
-    if((PyObject *)input_args.buffer == Py_None) {
+    if((PyObject *)input_args.buffer == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for external buffer.");
       return NULL;
@@ -1134,8 +1152,8 @@ static PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs
   free(pos);
   free(input_args.internal_buffer);
   free(output_dims);
-  Py_DECREF(input_args.data);
-  Py_DECREF(input_args.weights);
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);
 
   
   
