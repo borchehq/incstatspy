@@ -34,7 +34,7 @@ typedef struct input_args {
 } input_args_container;
 
 
-inline static bool increment(size_t *idx, size_t *n_dims, size_t dims) {
+inline static bool increment(npy_intp *idx, npy_intp *n_dims, size_t dims) {
   for (size_t i = 0; i < dims; ++i) {
       if (++idx[i] < n_dims[i]) {
           return false;
@@ -44,7 +44,7 @@ inline static bool increment(size_t *idx, size_t *n_dims, size_t dims) {
   return true;
 }
 
-inline static bool increment_ignore_axis(size_t *idx, size_t *n_dims, 
+inline static bool increment_ignore_axis(npy_intp *idx, npy_intp *n_dims, 
 size_t dims, int axis) {
   for (size_t i = 0; i < dims; i++) {
     if (i == axis) {
@@ -61,8 +61,8 @@ size_t dims, int axis) {
   return true;
 }
 
-inline static double *slice_axis(PyArrayObject *obj, uint64_t *pos,
-size_t *n_dims, size_t dims, int axis, bool *done) {
+inline static double *slice_axis(PyArrayObject *obj, npy_intp *pos,
+npy_intp *n_dims, size_t dims, int axis, bool *done) {
   double *d_ptr = NULL;
   if(pos[axis] < n_dims[axis]) {
     d_ptr = PyArray_GetPtr(obj, pos);
@@ -359,7 +359,7 @@ PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
   }
   
 
-  size_t *pos = calloc(input_args.n_dim_data, sizeof(size_t));
+  npy_intp *pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
@@ -410,7 +410,7 @@ PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
     }
   
     free(pos);
-    pos = calloc((input_args.n_dim_data - 1), sizeof(size_t));
+    pos = calloc((input_args.n_dim_data - 1), sizeof(npy_intp));
     if(pos == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for index structure.");
@@ -507,7 +507,7 @@ PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
     return NULL;
   }
 
-  size_t *pos = calloc(input_args.n_dim_data, sizeof(size_t));
+  npy_intp *pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
@@ -560,7 +560,7 @@ PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
     }
   
     free(pos);
-    pos = calloc((input_args.n_dim_data - 1), sizeof(size_t));
+    pos = calloc((input_args.n_dim_data - 1), sizeof(npy_intp));
     if(pos == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for index structure.");
@@ -668,7 +668,7 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
     return NULL;
   }
 
-  size_t *pos = calloc(input_args.n_dim_data, sizeof(size_t));
+  npy_intp *pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
@@ -724,7 +724,7 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
     }
   
     free(pos);
-    pos = calloc((input_args.n_dim_data - 1), sizeof(size_t));
+    pos = calloc((input_args.n_dim_data - 1), sizeof(npy_intp));
     if(pos == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for index structure.");
@@ -841,7 +841,7 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
     return NULL;
   }
 
-  size_t *pos = calloc(input_args.n_dim_data, sizeof(size_t));
+  npy_intp *pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
@@ -900,7 +900,7 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
     }
   
     free(pos);
-    pos = calloc((input_args.n_dim_data - 1), sizeof(size_t));
+    pos = calloc((input_args.n_dim_data - 1), sizeof(npy_intp));
     if(pos == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for index structure.");
@@ -1027,7 +1027,7 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
     "Couldn't allocate memory for results.");
     return NULL;
   }
-  size_t *pos = calloc(input_args.n_dim_data, sizeof(size_t));
+  npy_intp *pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
