@@ -26,11 +26,16 @@ project(${SKBUILD_PROJECT_NAME} LANGUAGES C)
 
 find_package(
   Python
-  COMPONENTS Interpreter Development.Module
+  COMPONENTS Interpreter Development
   NumPy
   REQUIRED)
 
+
 cmake_print_variables(Python_NumPy_INCLUDE_DIRS)
+# Use the found Python interpreter
+message(STATUS "Python executable: ${Python_EXECUTABLE}")
+message(STATUS "Python include dir: ${Python_INCLUDE_DIRS}")
+message(STATUS "Python library: ${Python_LIBRARIES}")
 
 python_add_library(rstatspy MODULE "" WITH_SOABI)
 target_include_directories(rstatspy PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/rstats/src/rstats/include ${Python_NumPy_INCLUDE_DIRS})
@@ -40,14 +45,9 @@ endif()
 target_link_libraries(rstatspy PRIVATE rstats Python::NumPy)
 install(TARGETS rstatspy DESTINATION .)
 
-#if(WIN32)
-#  add_custom_command(TARGET rstatspy POST_BUILD
-#    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/src/rstats/src/rstats/Release"
-#    COMMAND ${CMAKE_COMMAND} -E copy_directory
-#    "${CMAKE_BINARY_DIR}/src/rstats/src/rstats/"
-#    "${CMAKE_BINARY_DIR}/src/rstats/src/rstats/Release"
-#  )
-#endif()
+add_executable(test_rstatspy "test/test_rstatspy.c")
+target_include_directories(test_rstatspy PRIVATE ${Python_INCLUDE_DIRS})
+target_link_libraries(test_rstatspy PRIVATE ${Python_LIBRARIES})
 
 init_git_submodule(${CMAKE_CURRENT_LIST_DIR}/src/rstats)
 add_subdirectory(src)
