@@ -44,14 +44,15 @@ jobs:
         # Build the project
         CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug" pip install .  --target .
         export PYTHONPATH=$(pwd)
-        
+
     - name: Install test dependencies
       run: |
         python -m pip install numpy pytest
 
     - name: Run pytest
       run: |
-        pytest test/test_rstatspy.py
+        cp test/test_rstatspy.py .
+        pytest test_rstatspy.py
 
     - name: Build and run the C executable to generate coverage data
       run: |
