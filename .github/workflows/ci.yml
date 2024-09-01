@@ -60,8 +60,7 @@ jobs:
         cmake --build build
         cp build/test_rstatspy .
         ./test_rstatspy test_rstatspy.py
-        lcov --capture --directory .
-        --output-file coverage.info 
+        lcov --capture --directory . --output-file coverage.info 
         lcov --remove coverage.info '/usr/*' --output-file coverage.info  # Remove coverage for system files.
         lcov --list coverage.info
 
