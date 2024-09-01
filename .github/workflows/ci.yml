@@ -1,0 +1,76 @@
+name: Python C Extension Test with Coverage
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install scikit-build-core cmake
+
+    - name: Install lcov
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y lcov
+
+    - name: Configure and build the C extension and executable with coverage flags
+      run: |
+        export CFLAGS="--coverage"
+        export LDFLAGS="--coverage"
+
+        # Build the project
+        pip install .  # This builds both the Python extension and the C executable
+
+    - name: Install test dependencies
+      run: |
+        python -m pip install numpy pytest
+
+    - name: Run pytest
+      run: |
+        pytest ../test/test_rstatspy.py
+
+    - name: Run the C executable to generate coverage data
+      run: |
+        test_rstatspy
+
+    - name: Capture coverage data using lcov
+      run: |
+        lcov --capture --directory . --output-file coverage.info
+        lcov --remove coverage.info '/usr/*' --output-file coverage.info  # Remove coverage for system files.
+
+    - name: Generate coverage report
+      run: |
+        lcov --list coverage.info
+
+    - name: Upload Coverage to Codecov
+    uses: codecov/codecov-action@v4
+    with:
+      token: ${{ secrets.CODECOV_TOKEN }}
+      files: build/coverage.info
+      flags: unittests
+      name: codecov-umbrella
+      fail_ci_if_error: true
+      codecov_yml_path: .github/codecov.yml
