@@ -54,6 +54,7 @@ jobs:
         cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
               -DCMAKE_C_FLAGS="--coverage" \
               -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+        cmake --build build
         cd build
         test_rstatspy ../test/test_rstatspy.py
         lcov --capture --directory . --output-file coverage.info
