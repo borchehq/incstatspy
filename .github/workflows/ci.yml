@@ -60,8 +60,8 @@ jobs:
               -DCMAKE_C_FLAGS="--coverage" \
               -DCMAKE_EXE_LINKER_FLAGS="--coverage"
         cmake --build build
-        cd build
-        ./test_rstatspy ../test_rstatspy.py
+        cp build/test_rstatspy .
+        ./test_rstatspy test_rstatspy.py
         lcov --capture --directory . \
         --directory .. \
         --output-file coverage.info 
