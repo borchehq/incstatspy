@@ -1,5 +1,6 @@
 import rstatspy
 import numpy as np
+import sys
 
 
 class TestRStatsPy:
@@ -84,6 +85,7 @@ class TestRStatsPy:
                         assert element.ndim == ndim - 1
 
 def main():
+    print(sys.path)
     test_rstatspy = TestRStatsPy()
     test_rstatspy.test_mean()
     test_rstatspy.test_variance()
