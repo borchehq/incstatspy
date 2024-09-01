@@ -36,11 +36,8 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y lcov
 
-    - name: Configure and build the C extension and executable with coverage flags
+    - name: Configure and build the C extension
       run: |
-        export CFLAGS="--coverage"
-        export LDFLAGS="--coverage"
-
         # Build the project
         pip install .  # This builds both the Python extension and the C executable
 
@@ -52,12 +49,13 @@ jobs:
       run: |
         pytest test/test_rstatspy.py
 
-    - name: Run the C executable to generate coverage data
+    - name: Build and run the C executable to generate coverage data
       run: |
-        pwd
-        ls -a
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
+              -DCMAKE_C_FLAGS="--coverage" \
+              -DCMAKE_EXE_LINKER_FLAGS="--coverage"
         cd build
-        test_rstatspy
+        test_rstatspy ../test/test_rstatspy.py
         lcov --capture --directory . --output-file coverage.info
         lcov --remove coverage.info '/usr/*' --output-file coverage.info  # Remove coverage for system files.
         lcov --list coverage.info
