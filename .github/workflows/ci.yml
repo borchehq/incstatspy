@@ -52,7 +52,7 @@ jobs:
     - name: Run pytest
       run: |
         cd test
-        pytest test_rstatspy.py
+        python test_rstatspy.py
         cd ..
 
     - name: Generate coverage data
