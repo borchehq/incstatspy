@@ -43,6 +43,8 @@ jobs:
         export LDFLAGS="-fprofile-arcs -ftest-coverage"
         # Build the project
         CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug" pip install .  --target .
+        ls -a
+        pwd
         export PYTHONPATH=$(pwd):$PYTHONPATH
 
     - name: Install test dependencies
@@ -51,6 +53,8 @@ jobs:
 
     - name: Run pytest
       run: |
+        ls -a
+        pwd
         pytest test/test_rstatspy.py
 
     - name: Build and run the C executable to generate coverage data
