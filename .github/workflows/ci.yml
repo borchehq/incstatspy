@@ -38,8 +38,11 @@ jobs:
 
     - name: Configure and build the C extension
       run: |
+        # Set environment variables for compiler and linker flags
+        export CFLAGS="-g -fprofile-arcs -ftest-coverage"
+        export LDFLAGS="-fprofile-arcs -ftest-coverage"
         # Build the project
-        pip install .  # This builds both the Python extension and the C executable
+        CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug" pip install .  # This builds both the Python extension and the C executable
 
     - name: Install test dependencies
       run: |
@@ -57,9 +60,11 @@ jobs:
         cmake --build build
         cd build
         ./test_rstatspy ../test/test_rstatspy.py
-        lcov --rc lcov_branch_coverage=1 --capture --directory . --output-file coverage.info 
+        lcov --capture --directory . \
+        --directory /opt/hostedtoolcache/Python/3.9.19/x64/lib/python3.9/site-packages/ \
+        --output-file coverage.info 
         lcov --remove coverage.info '/usr/*' --output-file coverage.info  # Remove coverage for system files.
-        lcov --rc lcov_branch_coverage=1 --list coverage.info
+        lcov --list coverage.info
 
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v4
