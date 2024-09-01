@@ -7,9 +7,6 @@ class TestRStatsPy:
     p_max = 8
     ndim_max = 5
 
-    def __init__(self):
-        pass
-
     def test_mean(self):
         for i in range(TestRStatsPy.test_iterations):
             # 0 dimensional ndarrays
