@@ -1,7 +1,5 @@
 import rstatspy
 import numpy as np
-import time
-import scipy
 
 
 class TestRStatsPy:
