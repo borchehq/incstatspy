@@ -41,7 +41,7 @@ jobs:
         # Set environment variables for compiler and linker flags
         # Build the project
         CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage" \
-        pip install .--no-clean
+        pip install . --no-clean
 
     - name: Install test dependencies
       run: |
