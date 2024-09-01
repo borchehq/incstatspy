@@ -43,7 +43,7 @@ jobs:
         export LDFLAGS="-fprofile-arcs -ftest-coverage"
         # Build the project
         CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug" pip install .  --target .
-        export PYTHONPATH=$PYTHONPATH:.
+        export PYTHONPATH=$(pwd):$PYTHONPATH
 
     - name: Install test dependencies
       run: |
