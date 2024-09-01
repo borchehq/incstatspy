@@ -52,6 +52,7 @@ jobs:
     - name: Run pytest
       run: |
         cd test
+        echo $PYTHONPATH
         python test_rstatspy.py
         cd ..
 
