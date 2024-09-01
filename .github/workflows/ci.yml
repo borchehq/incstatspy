@@ -38,10 +38,12 @@ jobs:
 
     - name: Configure and build the C extension
       run: |
+        mkdir lib
         # Set environment variables for compiler and linker flags
         # Build the project
         CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage" \
-        pip install . --no-clean
+        pip install . --target lib --no-clean
+        export PYTHONPATH=$(pwd)/lib
 
     - name: Install test dependencies
       run: |
@@ -49,7 +51,9 @@ jobs:
 
     - name: Run pytest
       run: |
-        pytest test/test_rstatspy.py
+        cd test
+        pytest test_rstatspy.py
+        cd ..
 
     - name: Generate coverage data
       run: |
