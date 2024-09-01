@@ -43,6 +43,7 @@ jobs:
         # Build the project
         CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage" \
         pip install . --target lib --no-clean
+        ls -a
         export PYTHONPATH=$(pwd)/lib
 
     - name: Install test dependencies
