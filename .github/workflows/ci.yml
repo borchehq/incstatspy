@@ -45,7 +45,7 @@ jobs:
         CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug" pip install .  --target .
         ls -a
         pwd
-        export PYTHONPATH=$(pwd):$PYTHONPATH
+        export PYTHONPATH=$(pwd)
         echo $PYTHONPATH
 
     - name: Install test dependencies
