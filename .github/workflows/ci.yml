@@ -54,6 +54,8 @@ jobs:
 
     - name: Run the C executable to generate coverage data
       run: |
+        pwd
+        ls -a
         cd build
         test_rstatspy
         lcov --capture --directory . --output-file coverage.info
