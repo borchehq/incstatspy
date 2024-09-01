@@ -42,7 +42,8 @@ jobs:
         export CFLAGS="-g -fprofile-arcs -ftest-coverage"
         export LDFLAGS="-fprofile-arcs -ftest-coverage"
         # Build the project
-        CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug" pip install .  # This builds both the Python extension and the C executable
+        CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug" pip install .  --target .
+        export PYTHONPATH=$PYTHONPATH:.
 
     - name: Install test dependencies
       run: |
