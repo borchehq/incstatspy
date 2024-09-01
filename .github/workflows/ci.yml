@@ -51,10 +51,9 @@ jobs:
 
     - name: Run pytest
       run: |
-        cd test
+        export PYTHONPATH=$(pwd)/lib
         echo $PYTHONPATH
-        python test_rstatspy.py
-        cd ..
+        python test/test_rstatspy.py
 
     - name: Generate coverage data
       run: |
