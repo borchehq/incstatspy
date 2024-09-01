@@ -39,10 +39,8 @@ jobs:
     - name: Configure and build the C extension
       run: |
         # Set environment variables for compiler and linker flags
-        export CFLAGS="-g -fprofile-arcs -ftest-coverage"
-        export LDFLAGS="-fprofile-arcs -ftest-coverage"
         # Build the project
-        CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug" pip install .  --target .
+        CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage" pip install .  --target .
         export PYTHONPATH=$(pwd)
 
     - name: Install test dependencies
@@ -62,8 +60,7 @@ jobs:
         cmake --build build
         cp build/test_rstatspy .
         ./test_rstatspy test_rstatspy.py
-        lcov --capture --directory . \
-        --directory .. \
+        lcov --capture --directory .
         --output-file coverage.info 
         lcov --remove coverage.info '/usr/*' --output-file coverage.info  # Remove coverage for system files.
         lcov --list coverage.info

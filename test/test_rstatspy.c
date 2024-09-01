@@ -11,7 +11,12 @@ int run_python_script(const char *script_path) {
         fail = 1;
         goto except;
     }
-
+     // Ensure current directory is in sys.path
+    PyObject *sys_path = PySys_GetObject("path");
+    PyObject *current_dir = PyUnicode_FromString(".");
+    PyList_Append(sys_path, current_dir);
+    Py_DECREF(current_dir);
+    
     if(PyRun_SimpleFile(fp, script_path) != 0) {
         fail = 2;
         goto except;
