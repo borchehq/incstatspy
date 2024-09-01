@@ -51,10 +51,8 @@ jobs:
       run: |
         pytest test/test_rstatspy.py
 
-    - name: Run the C executable to generate coverage data
+    - name: Generate coverage data
       run: |
-        ls -a
-        ./test_rstatspy test_rstatspy.py
         lcov --capture --directory . --output-file coverage.info 
         lcov --remove coverage.info '/usr/*' --output-file coverage.info  # Remove coverage for system files.
         lcov --list coverage.info
