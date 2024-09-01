@@ -64,7 +64,7 @@ jobs:
         cp ../test/test_rstatspy.py .
         ./test_rstatspy test_rstatspy.py
         lcov --capture --directory . \
-        --directory /opt/hostedtoolcache/Python/3.9.19/x64/lib/python3.9/site-packages/ \
+        --directory .. \
         --output-file coverage.info 
         lcov --remove coverage.info '/usr/*' --output-file coverage.info  # Remove coverage for system files.
         lcov --list coverage.info
