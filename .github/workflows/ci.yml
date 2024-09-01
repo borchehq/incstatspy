@@ -44,8 +44,7 @@ jobs:
         # Build the project
         CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug" pip install .  --target .
         export PYTHONPATH=$(pwd)
-        echo $PYTHONPATH
-
+        
     - name: Install test dependencies
       run: |
         python -m pip install numpy pytest
