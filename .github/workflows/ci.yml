@@ -66,11 +66,11 @@ jobs:
         lcov --list coverage.info
 
     - name: Upload Coverage to Codecov
-    uses: codecov/codecov-action@v4
-    with:
-      token: ${{ secrets.CODECOV_TOKEN }}
-      files: build/coverage.info
-      flags: unittests
-      name: codecov-umbrella
-      fail_ci_if_error: true
-      codecov_yml_path: .github/codecov.yml
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: build/coverage.info
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: true
+        codecov_yml_path: .github/codecov.yml
