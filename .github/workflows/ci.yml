@@ -46,6 +46,7 @@ jobs:
         ls -a
         pwd
         export PYTHONPATH=$(pwd):$PYTHONPATH
+        echo $PYTHONPATH
 
     - name: Install test dependencies
       run: |
