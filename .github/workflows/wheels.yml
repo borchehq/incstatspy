@@ -42,7 +42,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: cibw-sdist
           path: dist/*.tar.gz
   
   pypi-publish:
@@ -64,9 +63,7 @@ jobs:
 
     - name: Check dist folder
       run: |
-        cp -r cibw-sdist/* .
         cp -r cibw-wheels-macos-14-0/* .
-        rm -r cibw-sdist
         rm -r cibw-wheels-macos-14-0
 
     - name: Publish package distributions to PyPI
