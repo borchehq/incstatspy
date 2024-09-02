@@ -59,9 +59,9 @@ jobs:
         export PYTHONPATH=$(pwd)/lib
         cd build
         ./test_rstatspy ../test/test_rstatspy.py
-        lcov --capture --directory . --directory .. --output-file coverage.info 
-        lcov --remove coverage.info '/usr/*' --output-file coverage.info  # Remove coverage for system files.
-        lcov --list coverage.info
+        lcov --capture --directory . --directory .. --output-file coverage.info --rc lcov_branch_coverage=1
+        lcov --remove coverage.info '/usr/*' --output-file coverage.info --rc lcov_branch_coverage=1
+        lcov --list coverage.info --rc lcov_branch_coverage=1
 
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v4
