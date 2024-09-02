@@ -58,8 +58,7 @@ jobs:
       run: |
         export PYTHONPATH=$(pwd)/lib
         cd build
-        ls -a
-        test_rstatspy ../test/test_rstatspy.py
+        ./test_rstatspy ../test/test_rstatspy.py
         lcov --capture --directory . --directory .. --output-file coverage.info 
         lcov --remove coverage.info '/usr/*' --output-file coverage.info  # Remove coverage for system files.
         lcov --list coverage.info
