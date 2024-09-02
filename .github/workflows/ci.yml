@@ -43,7 +43,6 @@ jobs:
         # Build the project
         CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage" \
         pip install . --target lib --no-clean -Cbuild-dir=build
-        ls -a
 
     - name: Install test dependencies
       run: |
