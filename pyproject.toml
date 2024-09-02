@@ -9,5 +9,5 @@ build-backend = "scikit_build_core.build"
 name = "rstatspy"  # as it would appear on PyPI
 version = "0.0.0"
 
-[tool.scikit-build-core]
-target = "rstatspy"
+[tool.scikit-build]
+build.targets = ["rstatspy"]
