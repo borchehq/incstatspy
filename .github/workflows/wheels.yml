@@ -62,5 +62,8 @@ jobs:
       with:
         path: dist/
 
+    - name: Check dist folder
+      run: ls -la dist/
+
     - name: Publish package distributions to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1.10
