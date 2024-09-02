@@ -42,9 +42,8 @@ jobs:
         # Set environment variables for compiler and linker flags
         # Build the project
         CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage" \
-        pip install . --target lib --no-clean
+        pip install . --target lib --no-clean -Cbuild-dir=build
         ls -a
-        export PYTHONPATH=$(pwd)/lib
 
     - name: Install test dependencies
       run: |
@@ -58,8 +57,9 @@ jobs:
 
     - name: Generate coverage data
       run: |
-        test/test_rstatspy
-        lcov --capture --directory . --directory /opt/hostedtoolcache/Python/3.9.19/x64/lib/python3.9/site-packages --output-file coverage.info 
+        cd build
+        test_rstatspy ../test/test_rstatspy.py
+        lcov --capture --directory . --directory .. --output-file coverage.info 
         lcov --remove coverage.info '/usr/*' --output-file coverage.info  # Remove coverage for system files.
         lcov --list coverage.info
 
