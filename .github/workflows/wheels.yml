@@ -58,6 +58,9 @@ jobs:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
     # retrieve your distributions here
-
+    - name: Move files to dist dir
+      run: |
+        mkdir dist
+        cp -r ./wheelhouse/*.whl dist
     - name: Publish package distributions to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1.10
