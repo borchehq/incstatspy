@@ -63,7 +63,11 @@ jobs:
         path: dist/
 
     - name: Check dist folder
-      run: ls -la dist/
+      run: |
+        cp -r cibw-sdist/* .
+        cp -r cibw-wheels-macos-14-0/* .
+        rm -r cibw-sdist
+        rm -r cibw-wheels-macos-14-0
 
     - name: Publish package distributions to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1.10
