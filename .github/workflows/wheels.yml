@@ -22,12 +22,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up architecture-specific environment variables
-        run: |
-          if [ "${{ matrix.os }}" == "macos-14" ]; then
-            echo "CIBW_ARCHS_MACOS=arm64" >> $GITHUB_ENV
-          fi
-          
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.20.0
 
