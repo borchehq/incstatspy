@@ -40,7 +40,7 @@ jobs:
       - name: Exclude tests on Linux.
         if: matrix.os != 'windows-latest'
         run: |
-          export RSTATSPY_EXCLUDE_TESTS 1
+          export RSTATSPY_EXCLUDE_TESTS=1
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.20.0
