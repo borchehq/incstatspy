@@ -27,8 +27,7 @@ project(${SKBUILD_PROJECT_NAME} LANGUAGES C)
 find_package(
   Python
   COMPONENTS Interpreter Development
-  NumPy
-  REQUIRED)
+  NumPy)
 
 
 cmake_print_variables(Python_NumPy_INCLUDE_DIRS)
