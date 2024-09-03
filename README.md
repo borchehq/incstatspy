@@ -5,7 +5,7 @@ A Python C extension for efficiently calculating running statistics on NumPy arr
 ## Status
 ![Build Status](https://github.com/borchehq/RStatsPy/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/borchehq/RStatsPy/graph/badge.svg?token=ZSESQKJEKQ)](https://codecov.io/gh/borchehq/RStatsPy)
-<img alt="PyPI - Version" src="https://img.shields.io/pypi/v/rstatspy?label=PyPi&color=green&cacheSeconds=120&link=https%3A%2F%2Fpypi.org%2Fproject%2Frstatspy%2F">
+[![PyPI - Version](https://img.shields.io/pypi/v/rstatspy?label=PyPi&color=green&cacheSeconds=120)](https://pypi.org/project/rstatspy/)
 
 
 ## Features
