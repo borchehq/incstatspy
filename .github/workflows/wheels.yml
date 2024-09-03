@@ -30,10 +30,9 @@ jobs:
           export GCC_VERSION=$(brew list --versions gcc | awk '{print $2}' | awk -F. '{print $1}')
           echo "CC=$(which gcc-${GCC_VERSION})" >> $GITHUB_ENV
           echo "CXX=$(which g++-${GCC_VERSION})" >> $GITHUB_ENV
+          echo "RSTATSPY_EXCLUDE_TESTS=1" >> $GITHUB_ENV
 
       - name: Build wheels
-        env:
-          RSTATSPY_EXCLUDE_TESTS: "1"
         uses: pypa/cibuildwheel@v2.20.0
 
       - uses: actions/upload-artifact@v4
