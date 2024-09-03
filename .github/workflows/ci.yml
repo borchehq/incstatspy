@@ -1,4 +1,4 @@
-name: Python C Extension Test with Coverage
+name: CI
 
 on:
   workflow_dispatch:
