@@ -47,11 +47,11 @@ install(TARGETS rstatspy DESTINATION .)
 
 if(NOT DEFINED EXCLUDE_TESTS)
   add_executable(test_rstatspy "test/test_rstatspy.c")
+  target_include_directories(test_rstatspy PRIVATE ${Python_INCLUDE_DIRS})
+  target_link_libraries(test_rstatspy PRIVATE ${Python_LIBRARIES})
 else()
   message(STATUS "EXCLUDE_TESTS is defined. Skipping test_rstatspy.")
 endif()
-target_include_directories(test_rstatspy PRIVATE ${Python_INCLUDE_DIRS})
-target_link_libraries(test_rstatspy PRIVATE ${Python_LIBRARIES})
 
 init_git_submodule(${CMAKE_CURRENT_LIST_DIR}/src/rstats)
 add_subdirectory(src)
