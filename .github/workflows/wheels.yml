@@ -9,9 +9,9 @@ jobs:
   build_wheels:
     env:
       CIBW_PROJECT_REQUIRES_PYTHON: ">=3.7"
-      CIBW_ENVIRONMENT:
-        LD_LIBRARY_PATH=$(pwd)/build/src/rstats/src/rstats${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH};
-        export RSTATSPY_EXCLUDE_TESTS=1;
+      CIBW_ENVIRONMENT: |
+        RSTATSPY_EXCLUDE_TESTS=1
+        LD_LIBRARY_PATH=$(pwd)/build/src/rstats/src/rstats${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
       CIBW_SKIP: "pp39*-manylinux_i686 pp3[1-9][0-9]-manylinux_i686"
 
     name: Build wheels on ${{ matrix.os }}
