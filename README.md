@@ -5,7 +5,7 @@ A Python C extension for efficiently calculating running statistics on NumPy arr
 ## Status
 ![Build Status](https://github.com/borchehq/RStatsPy/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/borchehq/RStatsPy/graph/badge.svg?token=ZSESQKJEKQ)](https://codecov.io/gh/borchehq/RStatsPy)
-[![PyPI version](https://badge.fury.io/py/rstatspy.svg)](https://badge.fury.io/py/rstatspy)
+![PyPI - Version](https://img.shields.io/pypi/v/rstatspy?color=green&cacheSeconds=120)
 ## Features
 
 - Compute running mean, variance, skewness, and kurtosis.
