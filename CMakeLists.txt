@@ -27,7 +27,8 @@ project(${SKBUILD_PROJECT_NAME} LANGUAGES C)
 find_package(
   Python
   COMPONENTS Interpreter Development
-  NumPy)
+  NumPy
+  REQUIRED)
 
 
 cmake_print_variables(Python_NumPy_INCLUDE_DIRS)
@@ -44,7 +45,11 @@ endif()
 target_link_libraries(rstatspy PRIVATE rstats Python::NumPy)
 install(TARGETS rstatspy DESTINATION .)
 
-add_executable(test_rstatspy "test/test_rstatspy.c")
+if(NOT DEFINED EXCLUDE_TESTS)
+  add_executable(test_rstatspy "test/test_rstatspy.c")
+else()
+  message(STATUS "EXCLUDE_TESTS is defined. Skipping test_rstatspy.")
+endif()
 target_include_directories(test_rstatspy PRIVATE ${Python_INCLUDE_DIRS})
 target_link_libraries(test_rstatspy PRIVATE ${Python_LIBRARIES})
 
