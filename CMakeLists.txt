@@ -45,7 +45,7 @@ endif()
 target_link_libraries(rstatspy PRIVATE rstats Python::NumPy)
 install(TARGETS rstatspy DESTINATION .)
 
-if(NOT DEFINED EXCLUDE_TESTS)
+if(NOT DEFINED ENV{RSTATSPY_EXCLUDE_TESTS})
   add_executable(test_rstatspy "test/test_rstatspy.c")
   target_include_directories(test_rstatspy PRIVATE ${Python_INCLUDE_DIRS})
   target_link_libraries(test_rstatspy PRIVATE ${Python_LIBRARIES})
