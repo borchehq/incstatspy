@@ -75,8 +75,8 @@ jobs:
 
     - name: Check dist folder
       run: |
-        cp -r dist/cibw-wheels-macos-14-0/* dist/
-        rm -r dist/cibw-wheels-macos-14-0
+        cp -r dist/cibw-wheels-*/* dist/
+        rm -r dist/cibw-wheels-*
         cp -r dist/cibw-sdist/* dist/
         rm -r dist/cibw-sdist
 
