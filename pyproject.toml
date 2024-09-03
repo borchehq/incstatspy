@@ -12,4 +12,4 @@ readme = "README.md"
 
 [tool.scikit-build]
 build.targets = ["rstatspy"]
-cmake.args = ["-DEXCLUDE_TESTS"]
+cmake.args = ["-DEXCLUDE_TESTS="]
