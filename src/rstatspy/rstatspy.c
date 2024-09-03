@@ -1173,20 +1173,139 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
 }
 
 static PyMethodDef rstats_methods[] = {
-    {"mean", (PyCFunction)mean, 
-    METH_VARARGS | METH_KEYWORDS, "Running mean function"},
-    {"variance", (PyCFunction)variance, 
-    METH_VARARGS | METH_KEYWORDS, "Running variance function"},
-    {"skewness", (PyCFunction)skewness, 
-    METH_VARARGS | METH_KEYWORDS, "Running skewness function"},
-    {"kurtosis", (PyCFunction)kurtosis, 
-    METH_VARARGS | METH_KEYWORDS, "Running kurtosis function"},
-    {"central_moment", (PyCFunction)central_moment, 
-    METH_VARARGS | METH_KEYWORDS, "Running central moment function"},
+    {   
+      "mean", (PyCFunction)mean, 
+      METH_VARARGS | METH_KEYWORDS,
+      "mean(input, weights=None, axis=0, buffer=None)\n"
+      "\n"
+      "Compute the running mean along the specified axis of the input array.\n"
+      "\n"
+      "Parameters:\n"
+      "  input : array-like\n"
+      "      Input data array or scalar.\n"
+      "  weights : array-like, optional\n"
+      "      Weights for the data points. Must be the same shape as `input`.\n"
+      "  axis : int, optional\n"
+      "      Axis along which to compute the mean. Default is 0.\n"
+      "  buffer : array-like, optional\n"
+      "      Buffer for intermediate storage. If not provided, one will be created.\n"
+      "\n"
+      "Returns:\n"
+      "  tuple of ndarray\n"
+      "      A tuple containing the computed mean array and the buffer used.\n"
+      "\n"
+    },
+    {
+      "variance", (PyCFunction)variance, 
+      METH_VARARGS | METH_KEYWORDS, 
+      "variance(input, weights=None, axis=0, buffer=None)\n"
+      "\n"
+      "Compute the running variance along the specified axis of the input array.\n"
+      "\n"
+      "Parameters:\n"
+      "  input : array-like\n"
+      "      Input data array or scalar.\n"
+      "  weights : array-like, optional\n"
+      "      Weights for the data points. Must be the same shape as `input`.\n"
+      "  axis : int, optional\n"
+      "      Axis along which to compute the variance. Default is 0.\n"
+      "  buffer : array-like, optional\n"
+      "      Buffer for intermediate storage. If not provided, one will be created.\n"
+      "\n"
+      "Returns:\n"
+      "  tuple of ndarray\n"
+      "      A tuple containing the computed variance array and the buffer used.\n"
+      "\n"
+    },
+    {
+      "skewness", (PyCFunction)skewness, 
+      METH_VARARGS | METH_KEYWORDS,
+      "skewness(input, weights=None, axis=0, buffer=None)\n"
+      "\n"
+      "Compute the running skewness along the specified axis of the input array.\n"
+      "\n"
+      "Parameters:\n"
+      "  input : array-like\n"
+      "      Input data array or scalar.\n"
+      "  weights : array-like, optional\n"
+      "      Weights for the data points. Must be the same shape as `input`.\n"
+      "  axis : int, optional\n"
+      "      Axis along which to compute the skewness. Default is 0.\n"
+      "  buffer : array-like, optional\n"
+      "      Buffer for intermediate storage. If not provided, one will be created.\n"
+      "\n"
+      "Returns:\n"
+      "  tuple of ndarray\n"
+      "      A tuple containing the computed skewness array and the buffer used.\n"
+      "\n"
+    },
+    {
+      "kurtosis", (PyCFunction)kurtosis, 
+      METH_VARARGS | METH_KEYWORDS, 
+      "kurtosis(input, weights=None, axis=0, buffer=None)\n"
+      "\n"
+      "Compute the running kurtosis along the specified axis of the input array.\n"
+      "\n"
+      "Parameters:\n"
+      "  input : array-like\n"
+      "      Input data array or scalar.\n"
+      "  weights : array-like, optional\n"
+      "      Weights for the data points. Must be the same shape as `input`.\n"
+      "  axis : int, optional\n"
+      "      Axis along which to compute the kurtosis. Default is 0.\n"
+      "  buffer : array-like, optional\n"
+      "      Buffer for intermediate storage. If not provided, one will be created.\n"
+      "\n"
+      "Returns:\n"
+      "  tuple of ndarray\n"
+      "      A tuple containing the computed kurtosis array and the buffer used.\n"
+      "\n"
+    },
+    {
+      "central_moment", (PyCFunction)central_moment, 
+      METH_VARARGS | METH_KEYWORDS,
+      "central_moment(input, p, weights=None, axis=0, buffer=None, standardize=False)\n"
+      "\n"
+      "Compute the central moments up to the p-th order along the specified axis.\n"
+      "\n"
+      "Parameters:\n"
+      "  input : array-like\n"
+      "      Input data array or scalar.\n"
+      "  p : int\n"
+      "      The order of the moment to compute.\n"
+      "  weights : array-like, optional\n"
+      "      Weights for the data points. Must be the same shape as `input`.\n"
+      "  axis : int, optional\n"
+      "      Axis along which to compute the central moments. Default is 0.\n"
+      "  buffer : array-like, optional\n"
+      "      Buffer for intermediate storage. If not provided, one will be created.\n"
+      "  standardize : bool, optional\n"
+      "      If true, the moments are standardized. Default is false.\n"
+      "\n"
+      "Returns:\n"
+      "  tuple of ndarray\n"
+      "      A tuple containing the computed central moments, mean and the buffer used.\n"
+      "\n"
+      },
     {NULL, NULL, 0, NULL}};
 
-static struct PyModuleDef rstats_module = {PyModuleDef_HEAD_INIT, "rstatspy",
-                                             NULL, -1, rstats_methods};
+static struct PyModuleDef rstats_module = {
+  PyModuleDef_HEAD_INIT, 
+  "rstatspy",
+  "A Python C extension for running statistics.\n\n"
+  "This module provides efficient implementations for calculating various "
+  "running statistics on NumPy arrays using C.\n\n"
+  "Available functions:\n"
+  "- `mean(input, weights=None, axis=0, buffer=None)`: Computes the running mean.\n"
+  "- `variance(input, weights=None, axis=0, buffer=None)`: Computes the running variance.\n"
+  "- `skewness(input, weights=None, axis=0, buffer=None)`: Computes the running skewness.\n"
+  "- `kurtosis(input, weights=None, axis=0, buffer=None)`: Computes the running kurtosis.\n"
+  "- `central_moment(input, p, weights=None, axis=0, buffer=None, standardize=False)`: "
+  "Computes central moments up to the p-th order.\n\n"
+  "See the module documentation for more details on usage and parameters.",
+  -1, 
+  rstats_methods
+};
 
 /* name here must match extension name, with PyInit_ prefix */
 PyMODINIT_FUNC PyInit_rstatspy(void) {
