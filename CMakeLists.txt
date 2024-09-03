@@ -26,7 +26,7 @@ project(${SKBUILD_PROJECT_NAME} LANGUAGES C)
 
 find_package(
   Python
-  COMPONENTS Interpreter Development
+  COMPONENTS Interpreter Development.Module
   NumPy
   REQUIRED)
 
@@ -46,6 +46,7 @@ target_link_libraries(rstatspy PRIVATE rstats Python::NumPy)
 install(TARGETS rstatspy DESTINATION .)
 
 if(NOT DEFINED ENV{RSTATSPY_EXCLUDE_TESTS})
+  find_package(Python COMPONENTS Development.Embed REQUIRED)
   add_executable(test_rstatspy "test/test_rstatspy.c")
   target_include_directories(test_rstatspy PRIVATE ${Python_INCLUDE_DIRS})
   target_link_libraries(test_rstatspy PRIVATE ${Python_LIBRARIES})
