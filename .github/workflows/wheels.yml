@@ -9,8 +9,11 @@ jobs:
   build_wheels:
     env:
       CIBW_PROJECT_REQUIRES_PYTHON: ">=3.7"
-      CIBW_ENVIRONMENT: 'LD_LIBRARY_PATH=$(pwd)/build/src/rstats/src/rstats${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}'
+      CIBW_ENVIRONMENT: |
+        'LD_LIBRARY_PATH=$(pwd)/build/src/rstats/src/rstats${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}'
+        'RSTATSPY_EXCLUDE_TESTS=1'
       CIBW_SKIP: "pp39*-manylinux_i686 pp3[1-9][0-9]-manylinux_i686"
+        
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -30,7 +33,6 @@ jobs:
           export GCC_VERSION=$(brew list --versions gcc | awk '{print $2}' | awk -F. '{print $1}')
           echo "CC=$(which gcc-${GCC_VERSION})" >> $GITHUB_ENV
           echo "CXX=$(which g++-${GCC_VERSION})" >> $GITHUB_ENV
-          echo "RSTATSPY_EXCLUDE_TESTS=1" >> $GITHUB_ENV
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.20.0
