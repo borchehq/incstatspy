@@ -21,6 +21,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install GCC on macOS
+        if: startsWith(matrix.os, 'macos')
+        run: brew install gcc
+
+      - name: Set GCC as the compiler on macOS
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          export GCC_VERSION=$(brew list --versions gcc | awk '{print $2}' | awk -F. '{print $1}')
+          echo "CC=$(which gcc-${GCC_VERSION})" >> $GITHUB_ENV
+          echo "CXX=$(which g++-${GCC_VERSION})" >> $GITHUB_ENV
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.20.0
 
