@@ -43,7 +43,7 @@ jobs:
         # Build the project
         CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage" \
         pip install . --target lib --no-clean -Cbuild-dir=build
-        cmake --build build --target test_rstatspy
+        cmake --build build --target test_incstatspy
 
     - name: Install test dependencies
       run: |
@@ -52,13 +52,13 @@ jobs:
     - name: Run pytest
       run: |
         export PYTHONPATH=$(pwd)/lib
-        pytest test/test_rstatspy.py
+        pytest test/test_incstatspy.py
 
     - name: Generate coverage data
       run: |
         export PYTHONPATH=$(pwd)/lib
         cd build
-        ./test_rstatspy ../test/test_rstatspy.py
+        ./test_incstatspy ../test/test_incstatspy.py
         lcov --capture --directory . --directory .. --output-file coverage.info --rc lcov_branch_coverage=1
         lcov --remove coverage.info '/usr/*' --output-file coverage.info --rc lcov_branch_coverage=1
         lcov --remove coverage.info '/opt/hostedtoolcache/*' --output-file coverage.info --rc lcov_branch_coverage=1
