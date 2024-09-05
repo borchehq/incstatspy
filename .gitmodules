@@ -1,3 +1,3 @@
-[submodule "rstats"]
-	path = src/rstats
-	url = https://github.com/borchehq/rstats
+[submodule "src/incstats"]
+	path = src/incstats
+	url = https://github.com/borchehq/incstats

@@ -1,5 +1,5 @@
-#ifndef RSTATS_PY_H
-#define RSTATS_PY_H
+#ifndef INCSTATS_PY_H
+#define INCSTATS_PY_H
 
 PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs);
 PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs);

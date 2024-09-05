@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "rstatspy.h"
-#include "rstats.h"
+#include "incstatspy.h"
+#include "incstats.h"
 
 #define PY_SSIZE_T_CLEAN
 
@@ -368,7 +368,7 @@ PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
 
   buffer_ptr = &input_args.internal_buffer[0];
   if(input_args.n_dim_data == 0) {
-    rstats_mean(input_args.scalar_data, input_args.scalar_weight, buffer_ptr);
+    incstats_mean(input_args.scalar_data, input_args.scalar_weight, buffer_ptr);
   }
   else {
     do { 
@@ -381,7 +381,7 @@ PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
         double val = *slice_axis(input_args.data, pos, 
         input_args.dimensions_data, input_args.n_dim_data, input_args.axis,
         &done);
-        rstats_mean(val, weight, buffer_ptr);
+        incstats_mean(val, weight, buffer_ptr);
       }
       buffer_ptr += 2;
     } while(!increment_ignore_axis(pos, input_args.dimensions_data, 
@@ -420,7 +420,7 @@ PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
     buffer_ptr = &input_args.internal_buffer[0];
     do { 
       double result = 0;
-      rstats_mean_finalize(&result, buffer_ptr);
+      incstats_mean_finalize(&result, buffer_ptr);
       buffer_ptr += 2;
       double *val = PyArray_GetPtr(array_mean, pos);
       *val = result;
@@ -437,7 +437,7 @@ PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
     }
     buffer_ptr = &input_args.internal_buffer[0];
     double result = 0;
-    rstats_mean_finalize(&result, buffer_ptr);
+    incstats_mean_finalize(&result, buffer_ptr);
     double *ptr = (double*)PyArray_DATA(array_mean);
     *ptr = result;
   }
@@ -516,7 +516,7 @@ PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
 
   buffer_ptr = &input_args.internal_buffer[0];
   if(input_args.n_dim_data == 0) {
-    rstats_variance(input_args.scalar_data, input_args.scalar_weight, buffer_ptr);
+    incstats_variance(input_args.scalar_data, input_args.scalar_weight, buffer_ptr);
   }
   else {
     do { 
@@ -529,7 +529,7 @@ PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
         double val = *slice_axis(input_args.data, pos, 
         input_args.dimensions_data, input_args.n_dim_data, input_args.axis,
         &done);
-        rstats_variance(val, weight, buffer_ptr);
+        incstats_variance(val, weight, buffer_ptr);
       }
       buffer_ptr += 3;
     } while(!increment_ignore_axis(pos, input_args.dimensions_data, 
@@ -570,7 +570,7 @@ PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
     buffer_ptr = &input_args.internal_buffer[0];
     do { 
       double result[2] = {0};
-      rstats_variance_finalize(result, buffer_ptr);
+      incstats_variance_finalize(result, buffer_ptr);
       buffer_ptr += 3;
       double *val = PyArray_GetPtr(array_mean, pos);
       *val = result[0];
@@ -591,7 +591,7 @@ PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
     }
     buffer_ptr = &input_args.internal_buffer[0];
     double result[2] = {0};
-    rstats_variance_finalize(result, buffer_ptr);
+    incstats_variance_finalize(result, buffer_ptr);
     double *ptr = (double*)PyArray_DATA(array_mean);
     *ptr = result[0];
     ptr = (double*)PyArray_DATA(array_variance);
@@ -677,7 +677,7 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
 
   buffer_ptr = &input_args.internal_buffer[0];
   if(input_args.n_dim_data == 0) {
-    rstats_skewness(input_args.scalar_data, input_args.scalar_weight, buffer_ptr);
+    incstats_skewness(input_args.scalar_data, input_args.scalar_weight, buffer_ptr);
   }
   else {
     do { 
@@ -690,7 +690,7 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
         double val = *slice_axis(input_args.data, pos, 
         input_args.dimensions_data, input_args.n_dim_data, input_args.axis,
         &done);
-        rstats_skewness(val, weight, buffer_ptr);
+        incstats_skewness(val, weight, buffer_ptr);
       }
       buffer_ptr += 4;
     } while(!increment_ignore_axis(pos, input_args.dimensions_data, 
@@ -734,7 +734,7 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
     buffer_ptr = &input_args.internal_buffer[0];
     do { 
       double result[3] = {0};
-      rstats_skewness_finalize(result, buffer_ptr);
+      incstats_skewness_finalize(result, buffer_ptr);
       buffer_ptr += 4;
       double *val = PyArray_GetPtr(array_mean, pos);
       *val = result[0];
@@ -760,7 +760,7 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
     }
     buffer_ptr = &input_args.internal_buffer[0];
     double result[3] = {0};
-    rstats_skewness_finalize(result, buffer_ptr);
+    incstats_skewness_finalize(result, buffer_ptr);
     double *ptr = (double*)PyArray_DATA(array_mean);
     *ptr = result[0];
     ptr = (double*)PyArray_DATA(array_variance);
@@ -850,7 +850,7 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
 
   buffer_ptr = &input_args.internal_buffer[0];
   if(input_args.n_dim_data == 0) {
-    rstats_kurtosis(input_args.scalar_data, input_args.scalar_weight, buffer_ptr);
+    incstats_kurtosis(input_args.scalar_data, input_args.scalar_weight, buffer_ptr);
   }
   else {
     do { 
@@ -863,7 +863,7 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
         double val = *slice_axis(input_args.data, pos, 
         input_args.dimensions_data, input_args.n_dim_data, input_args.axis,
         &done);
-        rstats_kurtosis(val, weight, buffer_ptr);
+        incstats_kurtosis(val, weight, buffer_ptr);
       }
       buffer_ptr += 5;
     } while(!increment_ignore_axis(pos, input_args.dimensions_data, 
@@ -910,7 +910,7 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
     buffer_ptr = &input_args.internal_buffer[0];
     do { 
       double result[4] = {0};
-      rstats_kurtosis_finalize(result, buffer_ptr);
+      incstats_kurtosis_finalize(result, buffer_ptr);
       buffer_ptr += 5;
       double *val = PyArray_GetPtr(array_mean, pos);
       *val = result[0];
@@ -940,7 +940,7 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
     }
     buffer_ptr = &input_args.internal_buffer[0];
     double result[4] = {0};
-    rstats_kurtosis_finalize(result, buffer_ptr);
+    incstats_kurtosis_finalize(result, buffer_ptr);
     double *ptr = (double*)PyArray_DATA(array_mean);
     *ptr = result[0];
     ptr = (double*)PyArray_DATA(array_variance);
@@ -1036,7 +1036,7 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
   
   buffer_ptr = &input_args.internal_buffer[0];
   if(input_args.n_dim_data == 0) {
-    rstats_central_moment(input_args.scalar_data, input_args.scalar_weight, buffer_ptr, input_args.p);
+    incstats_central_moment(input_args.scalar_data, input_args.scalar_weight, buffer_ptr, input_args.p);
   }
   else {
     do { 
@@ -1049,7 +1049,7 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
         double val = *slice_axis(input_args.data, pos, 
         input_args.dimensions_data, input_args.n_dim_data, input_args.axis,
         &done);
-        rstats_central_moment(val, weight, buffer_ptr, input_args.p);
+        incstats_central_moment(val, weight, buffer_ptr, input_args.p);
       }
       buffer_ptr += input_args.p + 1;
     } while(!increment_ignore_axis(pos, input_args.dimensions_data, 
@@ -1096,7 +1096,7 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
       return NULL;
     }
     do {  
-      rstats_central_moment_finalize(result, buffer_ptr, input_args.p, 
+      incstats_central_moment_finalize(result, buffer_ptr, input_args.p, 
       input_args.standardize);
       buffer_ptr += input_args.p + 1;
       for(int k = 0; k < input_args.p + 2; k++) {
@@ -1124,7 +1124,7 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
       "Couldn't allocate memory for results.");
       return NULL;
     }
-    rstats_central_moment_finalize(result, buffer_ptr, input_args.p, 
+    incstats_central_moment_finalize(result, buffer_ptr, input_args.p, 
     input_args.standardize);
     for(int k = 0; k < input_args.p + 2; k++) {
       double *val = PyArray_GetPtr(central_moment[k], pos);
@@ -1172,7 +1172,7 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
   return tuple;
 }
 
-static PyMethodDef rstats_methods[] = {
+static PyMethodDef incstats_methods[] = {
     {   
       "mean", (PyCFunction)mean, 
       METH_VARARGS | METH_KEYWORDS,
@@ -1289,9 +1289,9 @@ static PyMethodDef rstats_methods[] = {
       },
     {NULL, NULL, 0, NULL}};
 
-static struct PyModuleDef rstats_module = {
+static struct PyModuleDef incstats_module = {
   PyModuleDef_HEAD_INIT, 
-  "rstatspy",
+  "incstatspy",
   "A Python C extension for running statistics.\n\n"
   "This module provides efficient implementations for calculating various "
   "running statistics on NumPy arrays using C.\n\n"
@@ -1304,11 +1304,11 @@ static struct PyModuleDef rstats_module = {
   "Computes central moments up to the p-th order.\n\n"
   "See the module documentation for more details on usage and parameters.",
   -1, 
-  rstats_methods
+  incstats_methods
 };
 
 /* name here must match extension name, with PyInit_ prefix */
-PyMODINIT_FUNC PyInit_rstatspy(void) {
+PyMODINIT_FUNC PyInit_incstatspy(void) {
   import_array();
-  return PyModule_Create(&rstats_module);
+  return PyModule_Create(&incstats_module);
 }
