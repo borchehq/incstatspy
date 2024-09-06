@@ -6,7 +6,7 @@ PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs);
 PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs);
 PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs);
 PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs);
-PyObject *max(PyObject *self, PyObject *args, PyObject* kwargs);
-PyObject *min(PyObject *self, PyObject *args, PyObject* kwargs);
+PyObject *maximum(PyObject *self, PyObject *args, PyObject* kwargs);
+PyObject *minimum(PyObject *self, PyObject *args, PyObject* kwargs);
 
 #endif

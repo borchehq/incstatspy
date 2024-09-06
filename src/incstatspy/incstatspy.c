@@ -1191,7 +1191,7 @@ static void buffer_init(double *buffer, double val, size_t n) {
   }
 }
 
-PyObject *max(PyObject *self, PyObject *args, PyObject* kwargs) {
+PyObject *maximum(PyObject *self, PyObject *args, PyObject* kwargs) {
   static char *kwlist[] = {"x", "axis", "buffer", NULL};
   input_args_container input_args;
   input_args.data = (PyArrayObject *)NULL;
@@ -1336,7 +1336,7 @@ PyObject *max(PyObject *self, PyObject *args, PyObject* kwargs) {
   return tuple;
 }
 
-PyObject *min(PyObject *self, PyObject *args, PyObject* kwargs) {
+PyObject *minimum(PyObject *self, PyObject *args, PyObject* kwargs) {
   static char *kwlist[] = {"x", "axis", "buffer", NULL};
   input_args_container input_args;
   input_args.data = (PyArrayObject *)NULL;
@@ -1597,7 +1597,7 @@ static PyMethodDef incstats_methods[] = {
       "\n"
     },
     {   
-      "max", (PyCFunction)max, 
+      "max", (PyCFunction)maximum, 
       METH_VARARGS | METH_KEYWORDS,
       "max(x, axis=0, buffer=None)\n"
       "\n"
@@ -1619,7 +1619,7 @@ static PyMethodDef incstats_methods[] = {
       "\n"
     },
     {   
-      "min", (PyCFunction)min, 
+      "min", (PyCFunction)minimum, 
       METH_VARARGS | METH_KEYWORDS,
       "min(x, axis=0, buffer=None)\n"
       "\n"

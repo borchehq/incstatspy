@@ -4,7 +4,6 @@ include(InitGitSubmodule.cmake)
 include(CMakePrintHelpers)
 if(WIN32)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-  add_definitions(-DNOMINMAX)
 endif()
 #Ensure the build uses the install RPATH
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
