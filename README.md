@@ -1,6 +1,6 @@
 # incstatspy
 
-A Python C extension for efficiently calculating running statistics on NumPy arrays. This module provides functions for computing mean, variance, skewness, kurtosis, and central moments.
+A Python C extension for efficiently calculating statistics iteratively on NumPy arrays. This module provides functions for computing mean, variance, skewness, kurtosis, and central moments.
 
 ## Status
 ![Build Status](https://github.com/borchehq/incstatsPy/actions/workflows/ci.yml/badge.svg)
@@ -13,6 +13,7 @@ A Python C extension for efficiently calculating running statistics on NumPy arr
 - Compute running mean, variance, skewness, and kurtosis.
 - Calculate central moments up to a specified order.
 - Calculate standardized central moments up to a specified order.
+- Determine minimum and maximum values.
 - Designed for efficiency and simplicity.
 - Handles weighted data points.
 - Iterative update functionality when calling on multiple ndarrays of compatible shape.
