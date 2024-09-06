@@ -82,6 +82,36 @@ class TestincstatsPy:
                     tup = incstatspy.central_moment(ndarray, p)
                     for element in tup[:-1]:
                         assert element.ndim == ndim - 1
+    
+    def test_max(self):
+        for i in range(TestincstatsPy.test_iterations):
+            # 0 dimensional ndarrays
+            ndarray = np.array(np.random.rand())
+            max_, buffer = incstatspy.max(ndarray)
+            ndarray2 = np.array(np.random.rand())
+            max_, _ = incstatspy.max(ndarray2, buffer=buffer)
+            assert max_.ndim == 0
+            assert max_ == max(ndarray, ndarray2)
+            for ndim in range(1, TestincstatsPy.ndim_max + 1):
+                shape = tuple(np.random.randint(1, 25, size=ndim))
+                ndarray = np.random.rand(*shape)
+                max_, _ = incstatspy.max(ndarray)
+                assert max_.ndim == ndim - 1
+
+    def test_min(self):
+        for i in range(TestincstatsPy.test_iterations):
+            # 0 dimensional ndarrays
+            ndarray = np.array(np.random.rand())
+            min_, buffer = incstatspy.min(ndarray)
+            ndarray2 = np.array(np.random.rand())
+            min_, _ = incstatspy.min(ndarray2, buffer=buffer)
+            assert min_.ndim == 0
+            assert min_ == min(ndarray, ndarray2)
+            for ndim in range(1, TestincstatsPy.ndim_max + 1):
+                shape = tuple(np.random.randint(1, 25, size=ndim))
+                ndarray = np.random.rand(*shape)
+                min_, _ = incstatspy.min(ndarray)
+                assert min_.ndim == ndim - 1
 
 def main():
     test_incstatspy = TestincstatsPy()
@@ -90,6 +120,9 @@ def main():
     test_incstatspy.test_skewness()
     test_incstatspy.test_kurtosis()
     test_incstatspy.test_central_moment()
+    test_incstatspy.test_max()
+    test_incstatspy.test_min()
+
 
 if __name__ == "__main__":
     main()
