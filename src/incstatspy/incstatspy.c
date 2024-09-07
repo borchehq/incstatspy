@@ -120,6 +120,18 @@ input_args_container *input_args) {
      input_args->length_buffer = input_args->p + 1 >= 2 ? input_args->p + 1 : 2;
   }
   
+  if(object_raw_buffer == Py_None) {
+    object_raw_buffer = NULL;
+  }
+
+  if(object_raw_data == Py_None) {
+    object_raw_data = NULL;
+  }
+
+  if(object_raw_weights == Py_None) {
+    object_raw_weights = NULL;
+  }
+
   if(input_args->parse_p && input_args->p < 0) {
       PyErr_SetString(PyExc_TypeError, 
       "p must be non negative");
