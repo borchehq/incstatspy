@@ -97,25 +97,27 @@ input_args_container *input_args) {
   PyObject *object_raw_data = NULL;
   PyObject *object_raw_weights = NULL;
   PyObject *object_raw_buffer = NULL;
+  PyArrayObject *array_float64 = NULL;
+  PyArray_Descr *descr = NULL;
 
   if(input_args->is_min_or_max) {
     if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|iO", input_args->kwlist, 
     &object_raw_data, &(input_args->axis), &object_raw_buffer)) {
-      return -1;
+      goto cleanup_error;
     }
   }
   else if(!input_args->parse_p) {
     if(!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OiO", input_args->kwlist, 
     &object_raw_data, &object_raw_weights, &(input_args->axis),
     &object_raw_buffer)) {
-      return -1;
+      goto cleanup_error;
     }
   }
   else {
     if(!PyArg_ParseTupleAndKeywords(args, kwargs, "Oi|OiOp", input_args->kwlist, 
       &object_raw_data, &input_args->p, &object_raw_weights, &(input_args->axis),
       &object_raw_buffer, &input_args->standardize)) {
-        return -1;
+        goto cleanup_error;
     }
      input_args->length_buffer = input_args->p + 1 >= 2 ? input_args->p + 1 : 2;
   }
@@ -135,14 +137,14 @@ input_args_container *input_args) {
   if(input_args->parse_p && input_args->p < 0) {
       PyErr_SetString(PyExc_TypeError, 
       "p must be non negative");
-      return -1;
+      goto cleanup_error;
   }
 
   if(!PyArray_Check(object_raw_data)) {
     if(!PyArray_IsAnyScalar(object_raw_data)) {
       PyErr_SetString(PyExc_TypeError, 
       "Argument 1 is not a ndarray or scalar");
-      return -1;
+      goto cleanup_error;
     }
   }
 
@@ -170,11 +172,22 @@ input_args_container *input_args) {
     if(input_args->data == NULL) {
         PyErr_SetString(PyExc_TypeError,
         "Couldn't convert ndarray");
-    return -1;
+      goto cleanup_error;
     }
+    // Try to convert to float64.
     if(!is_float64((PyObject *)input_args->data)) {
-      PyErr_SetString(PyExc_TypeError, "Argument 1 is not of type NPY_FLOAT64");
-      return -1;
+      descr = PyArray_DescrFromType(NPY_FLOAT64);
+      if(descr == NULL) {
+        goto cleanup_error;
+      }
+      array_float64 = (PyArrayObject *)PyArray_CastToType(input_args->data, descr, 0);
+      Py_XDECREF(input_args->data);
+      input_args->data = array_float64;
+
+      if(array_float64 == NULL) {
+         PyErr_SetString(PyExc_TypeError, "Couldn't convert to float64");
+          goto cleanup_error;
+      }
     }
     input_args->n_dim_data = PyArray_NDIM(input_args->data);
   }
@@ -183,18 +196,30 @@ input_args_container *input_args) {
     if(is_python_float(object_raw_data)) {
       input_args->scalar_data = PyFloat_AsDouble(object_raw_data);
     }
+    else if(PyLong_Check(object_raw_data)) {
+      input_args->scalar_data = PyLong_AsLong(object_raw_data);
+    }
     else {
       input_args->data = (PyArrayObject *)
       PyArray_FromAny(object_raw_data, NULL, 0, 0, NPY_ARRAY_ALIGNED, NULL);
       if(input_args->data == NULL) {
         PyErr_SetString(PyExc_TypeError,
-        "Couldn't convert ndarray");
-        return -1;
+        "Couldn't convert to ndarray");
+        goto cleanup_error;
       }
       if(!is_float64((PyObject *) input_args->data)) {
-        PyErr_SetString(PyExc_TypeError, 
-        "Argument 1 is neither of type NPY_FLOAT64 nor a python float");
-        return -1;
+        descr = PyArray_DescrFromType(NPY_FLOAT64);
+        if(descr == NULL) {
+          goto cleanup_error;
+        }
+        array_float64 = (PyArrayObject *)PyArray_CastToType(input_args->data, descr, 0);
+        Py_XDECREF(input_args->data);
+        input_args->data = array_float64;
+
+        if(array_float64 == NULL) {
+          PyErr_SetString(PyExc_TypeError, "Couldn't convert to float64");
+            goto cleanup_error;
+        }
       }
       input_args->scalar_data = *(double*)PyArray_DATA(input_args->data);
     }
@@ -208,28 +233,40 @@ input_args_container *input_args) {
       if(input_args->weights == NULL) {
         PyErr_SetString(PyExc_TypeError,
         "Couldn't convert ndarray");
-        return -1;
+        goto cleanup_error;
       }
       if(!is_float64((PyObject *)input_args->weights)) {
-        PyErr_SetString(PyExc_TypeError, 
-        "Argument 2 is not of type NPY_FLOAT64");
-        return -1;
+        descr = PyArray_DescrFromType(NPY_FLOAT64);
+        if(descr == NULL) {
+          goto cleanup_error;
+        }
+        array_float64 = (PyArrayObject *)PyArray_CastToType(input_args->weights, descr, 0);
+        Py_XDECREF(input_args->weights);
+        input_args->weights = array_float64;
+
+        if(array_float64 == NULL) {
+          PyErr_SetString(PyExc_TypeError, "Couldn't convert to float64");
+            goto cleanup_error;
+        }
       }
       input_args->n_dim_weights = PyArray_NDIM(input_args->weights);
       if(input_args->input_is_scalar) {
         PyErr_SetString(PyExc_TypeError, 
         "Argument 1 is scalar while argument 2 is not");
-        return -1;
+        goto cleanup_error;
       }
     }
     else {
       if(!input_args->input_is_scalar) {
         PyErr_SetString(PyExc_TypeError, 
         "Argument 2 is scalar while argument 1 is not");
-        return -1;
+        goto cleanup_error;
       }
       if(is_python_float(object_raw_data)) {
         input_args->scalar_weight = PyFloat_AsDouble(object_raw_weights);
+      }
+      else if(PyLong_Check(object_raw_data)) {
+        input_args->scalar_weight = PyLong_AsLong(object_raw_weights);
       }
       else {
         input_args->weights = (PyArrayObject *)
@@ -237,12 +274,21 @@ input_args_container *input_args) {
         if(input_args->weights == NULL) {
             PyErr_SetString(PyExc_TypeError,
             "Couldn't convert ndarray");
-            return -1;
+            goto cleanup_error;
         }
         if(!is_float64((PyObject *) input_args->weights)) {
-          PyErr_SetString(PyExc_TypeError, 
-          "Argument 2 is neither of type NPY_FLOAT64 nor a python float");
-          return -1;
+          descr = PyArray_DescrFromType(NPY_FLOAT64);
+          if(descr == NULL) {
+            goto cleanup_error;
+          }
+          array_float64 = (PyArrayObject *)PyArray_CastToType(input_args->weights, descr, 0);
+          Py_XDECREF(input_args->weights);
+          input_args->weights = array_float64;
+
+          if(array_float64 == NULL) {
+            PyErr_SetString(PyExc_TypeError, "Couldn't convert to float64");
+              goto cleanup_error;
+          }
         }
         input_args->scalar_weight = *(double*)PyArray_DATA(input_args->weights);
       }
@@ -253,7 +299,7 @@ input_args_container *input_args) {
     if(input_args->n_dim_data != input_args->n_dim_weights) {
       PyErr_SetString(PyExc_TypeError, 
       "Argument 1 and argument 2 don't have the same number of dimensions");
-      return -1;
+      goto cleanup_error;
     }
   }
 
@@ -271,7 +317,7 @@ input_args_container *input_args) {
   && !input_args->input_is_scalar)) {
     PyErr_SetString(PyExc_TypeError, 
     "Axis must be non negative and within the dimensions of array");
-    return -1;
+    goto cleanup_error;
   }
   if(input_args->input_is_scalar) {
     input_args->axis = 0;
@@ -280,7 +326,7 @@ input_args_container *input_args) {
     if(input_args->n_dim_buffer != 1) {
       PyErr_SetString(PyExc_TypeError, 
       "Fourth argument is expected to be 1-dimensional");
-      return -1;
+      goto cleanup_error;
     }
   }
 
@@ -290,7 +336,7 @@ input_args_container *input_args) {
       if(input_args->dimensions_data[i] == 0) {
         PyErr_SetString(PyExc_TypeError, 
         "Dimensions can't be 0");
-        return -1;
+        goto cleanup_error;
       }
     }
   }
@@ -303,7 +349,7 @@ input_args_container *input_args) {
       if(input_args->dimensions_weights[i] != input_args->dimensions_data[i]) {
         PyErr_SetString(PyExc_TypeError, 
         "Dimensions of argument 1 and argument 2 are not matching!");
-        return -1;
+        goto cleanup_error;
       }
     }
   }
@@ -323,7 +369,7 @@ input_args_container *input_args) {
     if(input_args->dimensions_buffer[0] != input_args->length_buffer) {
       PyErr_SetString(PyExc_TypeError, 
       "Fourth argument has wrong length.");
-      return -1;
+      goto cleanup_error;
     }
   }
   
@@ -332,7 +378,7 @@ input_args_container *input_args) {
   if(input_args->internal_buffer == NULL) {
      PyErr_SetString(PyExc_TypeError, 
      "Couldn't allocate memory for the internal buffer.");
-     return -1;
+    goto cleanup_error;
   }
   
   if(input_args->buffer != NULL) {
@@ -343,6 +389,12 @@ input_args_container *input_args) {
   }
 
   return 0;
+  cleanup_error:
+  Py_XDECREF(input_args->data);
+  Py_XDECREF(input_args->weights);
+  Py_XDECREF(input_args->buffer);
+  free(input_args->internal_buffer);
+  return -1;
 }
 
 PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
@@ -376,7 +428,7 @@ PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
   
    
   if(parse_input(args, kwargs, &input_args) == -1) {
-    return NULL;
+    goto cleanup_error;
   }
   
 
@@ -384,7 +436,7 @@ PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
-    return NULL;
+    goto cleanup_error;
   }
 
   buffer_ptr = &input_args.internal_buffer[0];
@@ -414,7 +466,7 @@ PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
     if(output_dims == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
-      return NULL;
+      goto cleanup_error;
     }
     int k = 0;
     for(int i = 0; i < input_args.n_dim_data; i++) {
@@ -427,7 +479,7 @@ PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
     if((PyObject *)array_mean == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
-      return NULL;
+      goto cleanup_error;
     }
   
     free(pos);
@@ -435,7 +487,7 @@ PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
     if(pos == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for index structure.");
-      return NULL;
+      goto cleanup_error;
     }
 
     buffer_ptr = &input_args.internal_buffer[0];
@@ -454,7 +506,7 @@ PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
     if((PyObject *)array_mean == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
-      return NULL;
+     goto cleanup_error;
     }
     buffer_ptr = &input_args.internal_buffer[0];
     double result = 0;
@@ -470,7 +522,7 @@ PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
     if((PyObject *)array_mean == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for external buffer.");
-      return NULL;
+      goto cleanup_error;
     }
   }
   
@@ -487,12 +539,22 @@ PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
   PyObject* tuple = PyTuple_New(2);
 
   if(!tuple) {
-    return NULL;
+    goto cleanup_error;
   }
   PyTuple_SetItem(tuple, 0, (PyObject *)array_mean);
   PyTuple_SetItem(tuple, 1, (PyObject *)input_args.buffer);
   
   return tuple;
+
+  cleanup_error:
+  free(pos);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);
+  Py_XDECREF(array_mean);
+  Py_XDECREF(input_args.buffer);
+  return NULL;
 }
 
 PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
@@ -526,14 +588,14 @@ PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
   npy_intp *output_dims = NULL;
   
   if(parse_input(args, kwargs, &input_args) == -1) {
-    return NULL;
+    goto cleanup_error;
   }
 
   npy_intp *pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
-    return NULL;
+    goto cleanup_error;
   }
 
   buffer_ptr = &input_args.internal_buffer[0];
@@ -563,7 +625,7 @@ PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
     if(output_dims == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
-      return NULL;
+      goto cleanup_error;
     }
     int k = 0;
     for(int i = 0; i < input_args.n_dim_data; i++) {
@@ -578,7 +640,7 @@ PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
     if((PyObject *)array_mean == NULL || (PyObject *)array_variance == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
-      return NULL;
+      goto cleanup_error;
     }
   
     free(pos);
@@ -586,7 +648,7 @@ PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
     if(pos == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for index structure.");
-      return NULL;
+      goto cleanup_error;
     }
 
     buffer_ptr = &input_args.internal_buffer[0];
@@ -609,7 +671,7 @@ PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
     if((PyObject *)array_mean == NULL || (PyObject *)array_variance == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
-      return NULL;
+      goto cleanup_error;
     }
     buffer_ptr = &input_args.internal_buffer[0];
     double result[2] = {0};
@@ -627,7 +689,7 @@ PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
     if((PyObject *)input_args.buffer == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for external buffer.");
-      return NULL;
+     goto cleanup_error;
     }
   }
   
@@ -647,13 +709,24 @@ PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
   PyObject* tuple = PyTuple_New(3);
 
   if(!tuple) {
-    return NULL;
+    goto cleanup_error;
   }
   PyTuple_SetItem(tuple, 0, (PyObject *)array_mean);
   PyTuple_SetItem(tuple, 1, (PyObject *)array_variance);
   PyTuple_SetItem(tuple, 2, (PyObject *)input_args.buffer);
   
   return tuple;
+
+  cleanup_error:
+  free(pos);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);
+  Py_XDECREF(array_mean);
+  Py_XDECREF(array_variance);
+  Py_XDECREF(input_args.buffer);
+  return NULL;
 }
 
 PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
@@ -688,14 +761,14 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
   npy_intp *output_dims = NULL;
   
   if(parse_input(args, kwargs, &input_args) == -1) {
-    return NULL;
+    goto cleanup_error;
   }
 
   npy_intp *pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
-    return NULL;
+    goto cleanup_error;
   }
 
   buffer_ptr = &input_args.internal_buffer[0];
@@ -725,7 +798,7 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
     if(output_dims == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
-      return NULL;
+      goto cleanup_error;
     }
     int k = 0;
     for(int i = 0; i < input_args.n_dim_data; i++) {
@@ -743,7 +816,7 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
     NULL || (PyObject *)array_skewness == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
-      return NULL;
+      goto cleanup_error;
     }
   
     free(pos);
@@ -751,7 +824,7 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
     if(pos == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for index structure.");
-      return NULL;
+      goto cleanup_error;
     }
 
     buffer_ptr = &input_args.internal_buffer[0];
@@ -779,7 +852,7 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
     NULL || (PyObject *)array_skewness == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
-      return NULL;
+      goto cleanup_error;
     }
     buffer_ptr = &input_args.internal_buffer[0];
     double result[3] = {0};
@@ -799,7 +872,7 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
     if((PyObject *)input_args.buffer == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for external buffer.");
-      return NULL;
+      goto cleanup_error;
     }
   }
   
@@ -819,7 +892,7 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
   PyObject* tuple = PyTuple_New(4);
 
   if(!tuple) {
-    return NULL;
+    goto cleanup_error;
   }
   PyTuple_SetItem(tuple, 0, (PyObject *)array_mean);
   PyTuple_SetItem(tuple, 1, (PyObject *)array_variance);
@@ -827,6 +900,18 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
   PyTuple_SetItem(tuple, 3, (PyObject *)input_args.buffer);
   
   return tuple;
+
+  cleanup_error:
+  free(pos);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);
+  Py_XDECREF(array_mean);
+  Py_XDECREF(array_variance);
+  Py_XDECREF(array_skewness);
+  Py_XDECREF(input_args.buffer);
+  return NULL;
 }
 
 PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
@@ -862,14 +947,14 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
   npy_intp *output_dims = NULL;
   
   if(parse_input(args, kwargs, &input_args) == -1) {
-    return NULL;
+    goto cleanup_error;
   }
 
   npy_intp *pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
-    return NULL;
+    goto cleanup_error;
   }
 
   buffer_ptr = &input_args.internal_buffer[0];
@@ -899,7 +984,7 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
     if(output_dims == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
-      return NULL;
+      goto cleanup_error;
     }
     int k = 0;
     for(int i = 0; i < input_args.n_dim_data; i++) {
@@ -920,7 +1005,7 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
     (PyObject *)array_kurtosis == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
-      return NULL;
+      goto cleanup_error;
     }
   
     free(pos);
@@ -928,7 +1013,7 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
     if(pos == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for index structure.");
-      return NULL;
+      goto cleanup_error;
     }
 
     buffer_ptr = &input_args.internal_buffer[0];
@@ -960,7 +1045,7 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
     NULL || (PyObject *)array_skewness == NULL || (PyObject *)array_kurtosis == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
-      return NULL;
+      goto cleanup_error;
     }
     buffer_ptr = &input_args.internal_buffer[0];
     double result[4] = {0};
@@ -982,7 +1067,7 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
     if((PyObject *)input_args.buffer == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for external buffer.");
-      return NULL;
+      goto cleanup_error;
     }
   }
   
@@ -1002,7 +1087,7 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
   PyObject* tuple = PyTuple_New(5);
 
   if(!tuple) {
-    return NULL;
+    goto cleanup_error;
   }
   PyTuple_SetItem(tuple, 0, (PyObject *)array_mean);
   PyTuple_SetItem(tuple, 1, (PyObject *)array_variance);
@@ -1011,6 +1096,19 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
   PyTuple_SetItem(tuple, 4, (PyObject *)input_args.buffer);
   
   return tuple;
+
+  cleanup_error:
+  free(pos);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);
+  Py_XDECREF(array_mean);
+  Py_XDECREF(array_variance);
+  Py_XDECREF(array_skewness);
+  Py_XDECREF(array_kurtosis);
+  Py_XDECREF(input_args.buffer);
+  return NULL;
 }
 
 PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
@@ -1043,20 +1141,20 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
   npy_intp *output_dims = NULL;
   
   if(parse_input(args, kwargs, &input_args) == -1) {
-    return NULL;
+    goto cleanup_error;
   }
 
-  central_moment = malloc(sizeof(PyArrayObject *) * (input_args.p + 2));
+  central_moment = calloc((input_args.p + 2), sizeof(PyArrayObject *));
   if(central_moment == NULL) {
      PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for results.");
-    return NULL;
+    goto cleanup_error;
   }
   npy_intp *pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
-    return NULL;
+    goto cleanup_error;
   }
   
   buffer_ptr = &input_args.internal_buffer[0];
@@ -1086,7 +1184,7 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
     if(output_dims == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for mean array.");
-      return NULL;
+      goto cleanup_error;
     }
     int k = 0;
     for(int i = 0; i < input_args.n_dim_data; i++) {
@@ -1101,7 +1199,7 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
       if((PyObject *) central_moment[k] == NULL) {
         PyErr_SetString(PyExc_TypeError, 
         "Couldn't allocate memory for mean array.");
-        return NULL;
+        goto cleanup_error;
       }
     }
   
@@ -1110,7 +1208,7 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
     if(pos == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for index structure.");
-      return NULL;
+      goto cleanup_error;
     }
   
     double *result = calloc(input_args.p + 2, sizeof(double));
@@ -1118,7 +1216,7 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
     if(result == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for results.");
-      return NULL;
+      goto cleanup_error;
     }
     do {  
       incstats_central_moment_finalize(result, buffer_ptr, input_args.p, 
@@ -1138,7 +1236,7 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
       if((PyObject *) central_moment[k] == NULL) {
         PyErr_SetString(PyExc_TypeError, 
         "Couldn't allocate memory for mean array.");
-        return NULL;
+        goto cleanup_error;
       }
     }
     
@@ -1147,7 +1245,7 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
     if(result == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for results.");
-      return NULL;
+      goto cleanup_error;
     }
     incstats_central_moment_finalize(result, buffer_ptr, input_args.p, 
     input_args.standardize);
@@ -1165,7 +1263,7 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
     if((PyObject *)input_args.buffer == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for external buffer.");
-      return NULL;
+      goto cleanup_error;
     }
   }
 
@@ -1185,7 +1283,7 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
   PyObject* tuple = PyTuple_New(input_args.p + 3);
 
   if(!tuple) {
-    return NULL;
+    goto cleanup_error;
   }
   
   for(int k = 0; k < input_args.p + 2; k++) {
@@ -1195,6 +1293,19 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
   
   free(central_moment);
   return tuple;
+
+  cleanup_error:
+  free(pos);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);
+  for(int k = 0; k < input_args.p + 2 && central_moment != NULL; k++) {
+    Py_XDECREF(central_moment[k]);
+  }
+  Py_XDECREF(input_args.buffer);
+  free(central_moment);
+  return NULL;
 }
 
 static void buffer_init(double *buffer, double val, size_t n) {
@@ -1231,14 +1342,14 @@ PyObject *maximum(PyObject *self, PyObject *args, PyObject* kwargs) {
   npy_intp *output_dims = NULL;
 
   if(parse_input(args, kwargs, &input_args) == -1) {
-    return NULL;
+    goto cleanup_error;
   }
 
   npy_intp *pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
-    return NULL;
+    goto cleanup_error;
   }
 
   if((PyObject *)input_args.buffer == NULL) {
@@ -1268,7 +1379,7 @@ PyObject *maximum(PyObject *self, PyObject *args, PyObject* kwargs) {
     if(output_dims == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for max array.");
-      return NULL;
+      goto cleanup_error;
     }
     int k = 0;
     for(int i = 0; i < input_args.n_dim_data; i++) {
@@ -1281,7 +1392,7 @@ PyObject *maximum(PyObject *self, PyObject *args, PyObject* kwargs) {
     if((PyObject *)array_max == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for max array.");
-      return NULL;
+      goto cleanup_error;
     }
   
     free(pos);
@@ -1289,7 +1400,7 @@ PyObject *maximum(PyObject *self, PyObject *args, PyObject* kwargs) {
     if(pos == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for index structure.");
-      return NULL;
+      goto cleanup_error;
     }
 
     buffer_ptr = &input_args.internal_buffer[0];
@@ -1306,7 +1417,7 @@ PyObject *maximum(PyObject *self, PyObject *args, PyObject* kwargs) {
     if((PyObject *)array_max == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for max array.");
-      return NULL;
+      goto cleanup_error;
     }
     buffer_ptr = &input_args.internal_buffer[0];
     double *ptr = (double*)PyArray_DATA(array_max);
@@ -1320,7 +1431,7 @@ PyObject *maximum(PyObject *self, PyObject *args, PyObject* kwargs) {
     if((PyObject *)input_args.buffer == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for external buffer.");
-      return NULL;
+      goto cleanup_error;
     }
   }
   
@@ -1340,12 +1451,22 @@ PyObject *maximum(PyObject *self, PyObject *args, PyObject* kwargs) {
   PyObject* tuple = PyTuple_New(2);
 
   if(!tuple) {
-    return NULL;
+    goto cleanup_error;
   }
   PyTuple_SetItem(tuple, 0, (PyObject *)array_max);
   PyTuple_SetItem(tuple, 1, (PyObject *)input_args.buffer);
   
   return tuple;
+
+  cleanup_error:
+  free(pos);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);
+  Py_XDECREF(array_max);
+  Py_XDECREF(input_args.buffer);
+  return NULL;
 }
 
 PyObject *minimum(PyObject *self, PyObject *args, PyObject* kwargs) {
@@ -1376,7 +1497,7 @@ PyObject *minimum(PyObject *self, PyObject *args, PyObject* kwargs) {
   npy_intp *output_dims = NULL;
 
   if(parse_input(args, kwargs, &input_args) == -1) {
-    return NULL;
+    goto cleanup_error;
   }
 
   if((PyObject *)input_args.buffer == NULL) {
@@ -1387,7 +1508,7 @@ PyObject *minimum(PyObject *self, PyObject *args, PyObject* kwargs) {
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
-    return NULL;
+    goto cleanup_error;
   }
 
   buffer_ptr = &input_args.internal_buffer[0];
@@ -1413,7 +1534,7 @@ PyObject *minimum(PyObject *self, PyObject *args, PyObject* kwargs) {
     if(output_dims == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for min array.");
-      return NULL;
+      goto cleanup_error;
     }
     int k = 0;
     for(int i = 0; i < input_args.n_dim_data; i++) {
@@ -1426,7 +1547,7 @@ PyObject *minimum(PyObject *self, PyObject *args, PyObject* kwargs) {
     if((PyObject *)array_min == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for min array.");
-      return NULL;
+      goto cleanup_error;
     }
   
     free(pos);
@@ -1434,7 +1555,7 @@ PyObject *minimum(PyObject *self, PyObject *args, PyObject* kwargs) {
     if(pos == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for index structure.");
-      return NULL;
+      goto cleanup_error;
     }
 
     buffer_ptr = &input_args.internal_buffer[0];
@@ -1451,7 +1572,7 @@ PyObject *minimum(PyObject *self, PyObject *args, PyObject* kwargs) {
     if((PyObject *)array_min == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for min array.");
-      return NULL;
+      goto cleanup_error;
     }
     buffer_ptr = &input_args.internal_buffer[0];
     double *ptr = (double*)PyArray_DATA(array_min);
@@ -1465,7 +1586,7 @@ PyObject *minimum(PyObject *self, PyObject *args, PyObject* kwargs) {
     if((PyObject *)input_args.buffer == NULL) {
       PyErr_SetString(PyExc_TypeError, 
       "Couldn't allocate memory for external buffer.");
-      return NULL;
+      goto cleanup_error;
     }
   }
   
@@ -1485,12 +1606,22 @@ PyObject *minimum(PyObject *self, PyObject *args, PyObject* kwargs) {
   PyObject* tuple = PyTuple_New(2);
 
   if(!tuple) {
-    return NULL;
+    goto cleanup_error;
   }
   PyTuple_SetItem(tuple, 0, (PyObject *)array_min);
   PyTuple_SetItem(tuple, 1, (PyObject *)input_args.buffer);
   
   return tuple;
+
+  cleanup_error:
+  free(pos);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);
+  Py_XDECREF(array_min);
+  Py_XDECREF(input_args.buffer);
+  return NULL;
 }
 
 static PyMethodDef incstats_methods[] = {
