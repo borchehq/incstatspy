@@ -72,5 +72,5 @@ jobs:
         files: build/coverage.info
         flags: unittests
         name: codecov-umbrella
-        fail_ci_if_error: true
+        fail_ci_if_error: false
         codecov_yml_path: .github/codecov.yml
