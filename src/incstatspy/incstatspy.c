@@ -336,6 +336,7 @@ input_args_container *input_args) {
       if(input_args->dimensions_data[i] == 0) {
         PyErr_SetString(PyExc_TypeError, 
         "Dimensions can't be 0");
+        printf("TEST\n");
         goto cleanup_error;
       }
     }
@@ -394,6 +395,10 @@ input_args_container *input_args) {
   Py_XDECREF(input_args->weights);
   Py_XDECREF(input_args->buffer);
   free(input_args->internal_buffer);
+  input_args->data = NULL;
+  input_args->weights = NULL;
+  input_args->buffer = NULL;
+  input_args->internal_buffer = NULL;
   return -1;
 }
 
@@ -425,14 +430,15 @@ PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
   double *buffer_ptr = NULL;
   PyArrayObject *array_mean = NULL;
   npy_intp *output_dims = NULL;
+  PyObject *tuple = NULL;
+  npy_intp *pos = NULL;
   
-   
   if(parse_input(args, kwargs, &input_args) == -1) {
     goto cleanup_error;
   }
   
 
-  npy_intp *pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
+  pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
@@ -531,19 +537,18 @@ PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
     *ptr = input_args.internal_buffer[i];
   }
 
-  free(pos);
-  free(input_args.internal_buffer);
-  free(output_dims);
-  Py_XDECREF(input_args.data);
-  Py_XDECREF(input_args.weights);
-  PyObject* tuple = PyTuple_New(2);
-
+  tuple = PyTuple_New(2);
   if(!tuple) {
     goto cleanup_error;
   }
   PyTuple_SetItem(tuple, 0, (PyObject *)array_mean);
   PyTuple_SetItem(tuple, 1, (PyObject *)input_args.buffer);
   
+  free(pos);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);
   return tuple;
 
   cleanup_error:
@@ -554,6 +559,7 @@ PyObject *mean(PyObject *self, PyObject *args, PyObject* kwargs)
   Py_XDECREF(input_args.weights);
   Py_XDECREF(array_mean);
   Py_XDECREF(input_args.buffer);
+  Py_XDECREF(tuple);
   return NULL;
 }
 
@@ -586,12 +592,14 @@ PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
   PyArrayObject *array_mean = (PyArrayObject *) NULL;
   PyArrayObject *array_variance = (PyArrayObject *) NULL;
   npy_intp *output_dims = NULL;
-  
+  PyObject *tuple = NULL;
+  npy_intp *pos = NULL;
+
   if(parse_input(args, kwargs, &input_args) == -1) {
     goto cleanup_error;
   }
 
-  npy_intp *pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
+  pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
@@ -697,17 +705,8 @@ PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
     double *ptr = PyArray_GETPTR1(input_args.buffer, i);
     *ptr = input_args.internal_buffer[i];
   }
-
-  free(pos);
-  free(input_args.internal_buffer);
-  free(output_dims);
-  Py_XDECREF(input_args.data);
-  Py_XDECREF(input_args.weights);
-
   
-
-  PyObject* tuple = PyTuple_New(3);
-
+  tuple = PyTuple_New(3);
   if(!tuple) {
     goto cleanup_error;
   }
@@ -715,17 +714,23 @@ PyObject *variance(PyObject *self, PyObject *args, PyObject* kwargs)
   PyTuple_SetItem(tuple, 1, (PyObject *)array_variance);
   PyTuple_SetItem(tuple, 2, (PyObject *)input_args.buffer);
   
-  return tuple;
-
-  cleanup_error:
   free(pos);
   free(input_args.internal_buffer);
   free(output_dims);
   Py_XDECREF(input_args.data);
   Py_XDECREF(input_args.weights);
-  Py_XDECREF(array_mean);
-  Py_XDECREF(array_variance);
-  Py_XDECREF(input_args.buffer);
+  return tuple;
+
+  cleanup_error:
+  free(pos);
+  //free(input_args.internal_buffer);
+  //free(output_dims);
+  //Py_XDECREF(input_args.data);
+  //Py_XDECREF(input_args.weights);
+  //Py_XDECREF(array_mean);
+  //Py_XDECREF(array_variance);
+  //Py_XDECREF(input_args.buffer);
+  //Py_XDECREF(tuple);
   return NULL;
 }
 
@@ -759,12 +764,14 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
   PyArrayObject *array_variance = (PyArrayObject *) NULL;
   PyArrayObject *array_skewness = (PyArrayObject *) NULL;
   npy_intp *output_dims = NULL;
-  
+  PyObject *tuple = NULL;
+  npy_intp *pos = NULL;
+
   if(parse_input(args, kwargs, &input_args) == -1) {
     goto cleanup_error;
   }
 
-  npy_intp *pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
+  pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
@@ -881,16 +888,7 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
     *ptr = input_args.internal_buffer[i];
   }
 
-  free(pos);
-  free(input_args.internal_buffer);
-  free(output_dims);
-  Py_XDECREF(input_args.data);
-  Py_XDECREF(input_args.weights);
-
-  
-
-  PyObject* tuple = PyTuple_New(4);
-
+  tuple = PyTuple_New(4);
   if(!tuple) {
     goto cleanup_error;
   }
@@ -899,6 +897,11 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
   PyTuple_SetItem(tuple, 2, (PyObject *)array_skewness);
   PyTuple_SetItem(tuple, 3, (PyObject *)input_args.buffer);
   
+  free(pos);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);
   return tuple;
 
   cleanup_error:
@@ -911,6 +914,7 @@ PyObject *skewness(PyObject *self, PyObject *args, PyObject* kwargs)
   Py_XDECREF(array_variance);
   Py_XDECREF(array_skewness);
   Py_XDECREF(input_args.buffer);
+  Py_XDECREF(tuple);
   return NULL;
 }
 
@@ -945,12 +949,14 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
   PyArrayObject *array_skewness = (PyArrayObject *) NULL;
   PyArrayObject *array_kurtosis = (PyArrayObject *) NULL;
   npy_intp *output_dims = NULL;
-  
+  PyObject *tuple = NULL;
+  npy_intp *pos = NULL;
+
   if(parse_input(args, kwargs, &input_args) == -1) {
     goto cleanup_error;
   }
 
-  npy_intp *pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
+  pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
@@ -1074,18 +1080,9 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
   for(int i = 0; i < input_args.length_buffer; i++) {
     double *ptr = PyArray_GETPTR1(input_args.buffer, i);
     *ptr = input_args.internal_buffer[i];
-  }
+  }  
 
-  free(pos);
-  free(input_args.internal_buffer);
-  free(output_dims);
-  Py_XDECREF(input_args.data);
-  Py_XDECREF(input_args.weights);
-
-  
-
-  PyObject* tuple = PyTuple_New(5);
-
+  tuple = PyTuple_New(5);
   if(!tuple) {
     goto cleanup_error;
   }
@@ -1095,6 +1092,11 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
   PyTuple_SetItem(tuple, 3, (PyObject *)array_kurtosis);
   PyTuple_SetItem(tuple, 4, (PyObject *)input_args.buffer);
   
+  free(pos);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);
   return tuple;
 
   cleanup_error:
@@ -1108,6 +1110,7 @@ PyObject *kurtosis(PyObject *self, PyObject *args, PyObject* kwargs)
   Py_XDECREF(array_skewness);
   Py_XDECREF(array_kurtosis);
   Py_XDECREF(input_args.buffer);
+  Py_XDECREF(tuple);
   return NULL;
 }
 
@@ -1139,7 +1142,9 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
   double *buffer_ptr = NULL;
   PyArrayObject **central_moment = (PyArrayObject **) NULL;
   npy_intp *output_dims = NULL;
-  
+  PyObject *tuple = NULL;
+  npy_intp *pos = NULL;
+
   if(parse_input(args, kwargs, &input_args) == -1) {
     goto cleanup_error;
   }
@@ -1150,7 +1155,7 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
     "Couldn't allocate memory for results.");
     goto cleanup_error;
   }
-  npy_intp *pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
+  pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
@@ -1271,17 +1276,8 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
     double *ptr = PyArray_GETPTR1(input_args.buffer, i);
     *ptr = input_args.internal_buffer[i];
   }
-
-  free(pos);
-  free(input_args.internal_buffer);
-  free(output_dims);
-  Py_XDECREF(input_args.data);
-  Py_XDECREF(input_args.weights);
-
   
-  
-  PyObject* tuple = PyTuple_New(input_args.p + 3);
-
+  tuple = PyTuple_New(input_args.p + 3);
   if(!tuple) {
     goto cleanup_error;
   }
@@ -1291,6 +1287,11 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
   }
   PyTuple_SetItem(tuple, input_args.p + 2, (PyObject *)input_args.buffer);
   
+  free(pos);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);
   free(central_moment);
   return tuple;
 
@@ -1304,6 +1305,7 @@ PyObject *central_moment(PyObject *self, PyObject *args, PyObject* kwargs)
     Py_XDECREF(central_moment[k]);
   }
   Py_XDECREF(input_args.buffer);
+  Py_XDECREF(tuple);
   free(central_moment);
   return NULL;
 }
@@ -1340,12 +1342,14 @@ PyObject *maximum(PyObject *self, PyObject *args, PyObject* kwargs) {
   bool done = false;
   double *buffer_ptr = NULL;
   npy_intp *output_dims = NULL;
+  PyObject *tuple = NULL;
+  npy_intp *pos = NULL;
 
   if(parse_input(args, kwargs, &input_args) == -1) {
     goto cleanup_error;
   }
 
-  npy_intp *pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
+  pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
@@ -1440,22 +1444,18 @@ PyObject *maximum(PyObject *self, PyObject *args, PyObject* kwargs) {
     *ptr = input_args.internal_buffer[i];
   }
 
-  free(pos);
-  free(input_args.internal_buffer);
-  free(output_dims);
-  Py_XDECREF(input_args.data);
-  Py_XDECREF(input_args.weights);
-
-  
-
-  PyObject* tuple = PyTuple_New(2);
-
+  tuple = PyTuple_New(2);
   if(!tuple) {
     goto cleanup_error;
   }
   PyTuple_SetItem(tuple, 0, (PyObject *)array_max);
   PyTuple_SetItem(tuple, 1, (PyObject *)input_args.buffer);
-  
+
+  free(pos);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);  
   return tuple;
 
   cleanup_error:
@@ -1466,6 +1466,7 @@ PyObject *maximum(PyObject *self, PyObject *args, PyObject* kwargs) {
   Py_XDECREF(input_args.weights);
   Py_XDECREF(array_max);
   Py_XDECREF(input_args.buffer);
+  Py_XDECREF(tuple);
   return NULL;
 }
 
@@ -1495,6 +1496,8 @@ PyObject *minimum(PyObject *self, PyObject *args, PyObject* kwargs) {
   bool done = false;
   double *buffer_ptr = NULL;
   npy_intp *output_dims = NULL;
+  PyObject *tuple = NULL;
+  npy_intp *pos = NULL;
 
   if(parse_input(args, kwargs, &input_args) == -1) {
     goto cleanup_error;
@@ -1504,7 +1507,7 @@ PyObject *minimum(PyObject *self, PyObject *args, PyObject* kwargs) {
     buffer_init(input_args.internal_buffer, DBL_MAX, input_args.length_buffer);
   }
 
-  npy_intp *pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
+  pos = calloc(input_args.n_dim_data, sizeof(npy_intp));
   if(pos == NULL && input_args.n_dim_data > 0) {
     PyErr_SetString(PyExc_TypeError, 
     "Couldn't allocate memory for index structure.");
@@ -1595,22 +1598,18 @@ PyObject *minimum(PyObject *self, PyObject *args, PyObject* kwargs) {
     *ptr = input_args.internal_buffer[i];
   }
 
-  free(pos);
-  free(input_args.internal_buffer);
-  free(output_dims);
-  Py_XDECREF(input_args.data);
-  Py_XDECREF(input_args.weights);
-
-  
-
-  PyObject* tuple = PyTuple_New(2);
-
+  tuple = PyTuple_New(2);
   if(!tuple) {
     goto cleanup_error;
   }
   PyTuple_SetItem(tuple, 0, (PyObject *)array_min);
   PyTuple_SetItem(tuple, 1, (PyObject *)input_args.buffer);
   
+  free(pos);
+  free(input_args.internal_buffer);
+  free(output_dims);
+  Py_XDECREF(input_args.data);
+  Py_XDECREF(input_args.weights);
   return tuple;
 
   cleanup_error:
@@ -1621,6 +1620,7 @@ PyObject *minimum(PyObject *self, PyObject *args, PyObject* kwargs) {
   Py_XDECREF(input_args.weights);
   Py_XDECREF(array_min);
   Py_XDECREF(input_args.buffer);
+  Py_XDECREF(tuple);
   return NULL;
 }
 
